@@ -1,0 +1,82 @@
+// These code snippets can be copied and pasted into system_gpio.cpp and triggered by SW1 for testing.
+
+// 1) Creating a Wifi Object
+//
+case 0: // Creating wifi
+{
+    if (wifi == nullptr)
+        wifi = new Wifi();
+
+    if (wifi != nullptr) // Make sure memory was allocated
+    {
+        if (xSemaphoreTake(semWifiEntry, portMAX_DELAY) == pdTRUE) // Get a lock on the object after it initializes
+        {
+            taskHandleWIFIRun = wifi->getRunTaskHandle();
+            queHandleWIFICmdRequest = wifi->getCmdRequestQueue();
+            xSemaphoreGive(semWifiEntry); // Release lock
+
+            // Send out notifications to any object that needs the wifi and tell them wifi is now available.
+
+            ESP_LOGW(TAG, "wifi instantiated");
+        }
+    }
+    break;
+}
+
+// 2) Destroying and Creating a Wifi Object
+//
+case 1: // Destroying wifi
+{
+    if (wifi != nullptr)
+    {
+      if (semWifiEntry != nullptr)
+      {
+          xSemaphoreTake(semWifiEntry, portMAX_DELAY); // Wait here until we gain the lock.
+
+          // Send out notifications to any object that uses the wifi and tell them wifi is no longer available.
+          // Create a short waiting period
+
+          delete wifi;                   //        
+          wifi = nullptr;                // Destructor will not set pointer null.  We have to do that manually.
+          ESP_LOGW(TAG, "wifi deleted"); //
+
+          taskHandleWIFIRun = nullptr;       // Clears the wifi handles locally
+          queHandleWIFICmdRequest = nullptr; //
+
+          // Note: The semWifiEntry semaphore is already destroyed - so don't "Give" it here or a run time error will occur
+      }
+      else
+          ESP_LOGW(TAG, "semWifiEntry is not valid");
+    }
+    else
+        ESP_LOGW(TAG, "wifi object is null");
+
+    break;
+}
+
+
+// 1) Starting and Stopping a Wifi Connection
+//
+
+case 0: // Starting the Connection
+{
+    while (!xTaskNotify(taskHandleWIFIRun, static_cast<uint32_t>(WIFI_NOTIFY::CMD_CONN_PRI_HOST), eSetValueWithoutOverwrite))
+        vTaskDelay(pdMS_TO_TICKS(50));
+
+    while (!xTaskNotify(taskHandleWIFIRun, static_cast<uint32_t>(WIFI_NOTIFY::CMD_RUN_DIRECTIVES), eSetValueWithoutOverwrite))
+        vTaskDelay(pdMS_TO_TICKS(50));
+    break;
+}
+case 1: // Stopping the Connection
+{
+    while (!xTaskNotify(taskHandleWIFIRun, static_cast<uint32_t>(WIFI_NOTIFY::CMD_DISC_HOST), eSetValueWithoutOverwrite))
+        vTaskDelay(pdMS_TO_TICKS(50));
+
+    while (!xTaskNotify(taskHandleWIFIRun, static_cast<uint32_t>(WIFI_NOTIFY::CMD_RUN_DIRECTIVES), eSetValueWithoutOverwrite))
+        vTaskDelay(pdMS_TO_TICKS(50));
+    break;
+}
+
+_________________________________________
+
+
