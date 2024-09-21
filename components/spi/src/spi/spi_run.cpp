@@ -37,7 +37,11 @@ void SPI::run(void) // I2C processing lives here for the lifetime of the object
             {
             case SPI_INIT::Start:
             {
-                ESP_LOGI(TAG, "Initalization Start");
+                if (showInitSteps)
+                    ESP_LOGI(TAG, "Step 1  - Start");
+
+                //if (show & _showInit)
+                    //routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): SPI_INIT::Start");
                 initSPIStep = SPI_INIT::Load_NVS_Settings;
                 [[fallthrough]];
             }

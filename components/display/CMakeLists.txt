@@ -9,6 +9,7 @@ set(DISPLAY_REQUIRES
 # Anything that must be exposed to the sources files, but may remain hidden from the header files.
 set(DISPLAY_PRIV_REQUIRES
     main
+    nvs
 )
 #
 idf_component_register(SRCS ${SOURCES}

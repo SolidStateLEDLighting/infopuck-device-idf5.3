@@ -8,6 +8,8 @@ set(REQUIRES
 #
 # Anything that must be exposed to the sources files, but may remain hidden from the header files.
 set(PRIV_REQUIRES
+     main
+     nvs
 )
 #
 #

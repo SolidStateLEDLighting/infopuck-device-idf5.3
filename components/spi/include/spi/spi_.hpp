@@ -9,14 +9,29 @@
 
 #include "driver/spi_common.h"
 
-#ifdef __cplusplus
+#include "spi/spi_defs.hpp" // Local definitions, structs, and enumerations
+
+#include <cstring> // Standard libraries
+
+#include "freertos/FreeRTOS.h" // RTOS Libraries
+#include "freertos/task.h"
+#include "freertos/queue.h"
+#include "freertos/semphr.h"
+#include "freertos/projdefs.h"
+
+#include "esp_log.h" // ESP libraries
+#include "esp_check.h"
+
+#include "system_.hpp"
+#include "nvs/nvs_.hpp"
+
+class System; /* Forward Declarations */
+class NVS;
+
+extern SemaphoreHandle_t semSPIEntry;
+
 extern "C"
 {
-#endif
-    class System;
-
-    extern SemaphoreHandle_t semSPIEntry;
-
     //
     // SPI Bus
     //
@@ -48,12 +63,30 @@ extern "C"
         // Private variables
         //
         char TAG[5] = "_spi";
+
+        /* Object References */
+        System *sys = nullptr;
+        NVS *nvs = nullptr;
+        
         bool HasMux = false;
 
-        spi_host_device_t spiHost;
-        int spiMOSIPin = 12;
-        int spiMISOPin = 12;
-        int spiClockPin = 10;
+        spi_host_device_t spiHost; //
+        int spiMOSIPin = 0;        // Initial values
+        int spiMISOPin = 0;        //
+        int spiClockPin = 0;       //
+
+        /* Taks Handles that we might need */
+        TaskHandle_t taskHandleSystemRun = nullptr;
+
+        uint8_t show = 0;
+        uint8_t showSPI = 0;
+
+        void setFlags(void); // Standard Pre-Task Functions
+        void setLogLevels(void);
+        void createSemaphores(void);
+        void destroySemaphores(void);
+        void createQueues(void);
+        void destroyQueues(void);
 
         //
         // RTOS Related variables/functions
@@ -79,6 +112,9 @@ extern "C"
         void readBytesImmediate(uint8_t, size_t, uint8_t *, int32_t);
         void writeBytesImmediate(uint8_t, size_t, uint8_t *, int32_t);
 
+        QueueHandle_t queueCmdRequests = nullptr;   // SPI <-- (Incomming commands arrive here)
+        SPI_CmdRequest *ptrSPICmdRequest = nullptr; //
+
         //
         // Private Member functions
         //
@@ -90,7 +126,4 @@ extern "C"
         bool showRun = false;
         bool showInitSteps = true;
     };
-
-#ifdef __cplusplus
 }
-#endif
