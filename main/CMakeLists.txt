@@ -13,6 +13,7 @@ set(REQUIRES
     driver
     display
     i2c
+    spi
     wifi
 )
 #

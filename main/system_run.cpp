@@ -268,7 +268,7 @@ void System::run(void)
                     taskHandleI2CRun = i2c->getRunTaskHandle();
                     queHandleI2CCmdRequest = i2c->getCmdRequestQueue();
                     xSemaphoreGive(semI2CEntry);
-                    sysInitStep = SYS_INIT::Create_Display;
+                    sysInitStep = SYS_INIT::Create_SPI;
                 }
                 break;
             }
@@ -280,8 +280,36 @@ void System::run(void)
 
                 // Create_SPI,
                 // Wait_On_SPI,
-                // Create_Display,
-                // Wait_On_Display,
+
+            case SYS_INIT::Create_SPI:
+            {
+                if (show & _showInit)
+                    routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): SYS_INIT::Create_SPI - Step " + std::to_string((int)SYS_INIT::Create_SPI));
+
+                if (spi == nullptr)
+                    spi = new SPI(SPI2_HOST, 11, 12, 10); // MOSI_Pin, MISO_Pin, Clock_Pin
+
+                if (spi != nullptr)
+                {
+                    if (show & _showInit)
+                        routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): SYS_INIT::Wait_On_SPI - Step " + std::to_string((int)SYS_INIT::Wait_On_SPI));
+
+                    sysInitStep = SYS_INIT::Wait_On_SPI;
+                }
+                [[fallthrough]];
+            }
+
+            case SYS_INIT::Wait_On_SPI:
+            {
+                if (xSemaphoreTake(semSPIEntry, 100))
+                {
+                    taskHandleSPIRun = spi->getRunTaskHandle();
+                    queHandleSPICmdRequest = spi->getCmdRequestQueue();
+                    xSemaphoreGive(semSPIEntry);
+                    sysInitStep = SYS_INIT::Create_Display;
+                }
+                break;
+            }
 
             case SYS_INIT::Create_Display:
             {

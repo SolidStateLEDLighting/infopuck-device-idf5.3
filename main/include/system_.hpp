@@ -25,6 +25,7 @@
 #include "esp_pm.h"
 
 #include "nvs/nvs_.hpp"         // Our components
+#include "spi/spi_.hpp"
 #include "display/display_.hpp" //
 #include "i2c/i2c_.hpp"         //
 #include "wifi/wifi_.hpp"       // NOTE: SNTP is completely isolated from the System
@@ -32,6 +33,7 @@
 class NVS; // Forward declarations
 class Display;
 class I2C;
+class SPI;
 class Wifi;
 
 extern "C"
@@ -68,7 +70,7 @@ extern "C"
         // IMU *imu = nullptr;
         // MIC *mic = nullptr;
         // Speaker *speak = nullptr;
-        // SPI *spi = nullptr;
+        SPI *spi = nullptr;
         // TOUCH *touch = nullptr;
         Wifi *wifi = nullptr;
 
@@ -79,6 +81,7 @@ extern "C"
         uint32_t bootCount = 0;
 
         QueueHandle_t queHandleWIFICmdRequest = nullptr;
+        QueueHandle_t queHandleSPICmdRequest = nullptr;
         QueueHandle_t queHandleDisplayCmdRequest = nullptr;
         QueueHandle_t queHandleI2CCmdRequest = nullptr;
 
@@ -143,6 +146,7 @@ extern "C"
         SYS_OP opSys_Return = SYS_OP::Idle;
         SYS_INIT sysInitStep = SYS_INIT::Finished;
 
+TaskHandle_t taskHandleSPIRun = nullptr; // RTOS
         TaskHandle_t taskHandleDisplayRun = nullptr; // RTOS
         TaskHandle_t taskHandleWifiRun = nullptr;
         TaskHandle_t taskHandleI2CRun = nullptr;

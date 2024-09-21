@@ -40,13 +40,14 @@ extern "C"
         SPI(spi_host_device_t, int, int, int);
         ~SPI();
 
+        TaskHandle_t &getRunTaskHandle(void);
         QueueHandle_t &getCmdRequestQueue(void);
 
     private:
         //
         // Private variables
         //
-        char TAG[5] = "SPI ";
+        char TAG[5] = "_spi";
         bool HasMux = false;
 
         spi_host_device_t spiHost;
@@ -57,7 +58,7 @@ extern "C"
         //
         // RTOS Related variables/functions
         //
-        TaskHandle_t taskHandleSPI = nullptr;
+        TaskHandle_t taskHandleRun = nullptr;
         QueueHandle_t xQueueSPICmdRequests;
         SPI_CmdRequest *ptrSPICmdReq;
         SPI_Response *ptrSPICmdResp;
