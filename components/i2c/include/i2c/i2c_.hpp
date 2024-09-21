@@ -3,13 +3,12 @@
 #include "i2c_defs.hpp"
 
 #include "esp_log.h" // ESP Libraries
-#include "driver/i2c.h"
+// #include "driver/i2c.h"
 
 #include "freertos/semphr.h" // RTOS Libraries
 #include "freertos/task.h"
 #include "freertos/event_groups.h"
 #include "freertos/FreeRTOSConfig.h"
-
 
 #ifdef __cplusplus
 extern "C"
@@ -29,7 +28,9 @@ extern "C"
         I2C(i2c_port_t, gpio_num_t, gpio_num_t, uint32_t, uint32_t);
         ~I2C();
 
+        TaskHandle_t &getRunTaskHandle(void);
         QueueHandle_t &getCmdRequestQueue(void);
+
         void muxScan();
         void busScan();
         bool slavePresent(uint8_t, int32_t);
@@ -43,7 +44,7 @@ extern "C"
         //
         // RTOS Related variables/functions
         //
-        TaskHandle_t taskHandleI2C = nullptr;
+        TaskHandle_t taskHandleRun = nullptr;
         QueueHandle_t xQueueI2CCmdRequests;
         I2C_CmdRequest *ptrI2CCmdReq;
         I2C_Response *ptrI2CCmdResp;

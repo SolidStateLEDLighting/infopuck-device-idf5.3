@@ -25,8 +25,6 @@ class NVS;
 class SNTP;
 class PROV;
 
-/* External Semaphores */
-
 extern "C"
 {
     class Wifi

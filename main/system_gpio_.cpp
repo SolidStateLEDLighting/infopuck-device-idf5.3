@@ -15,7 +15,6 @@
 /* External Semaphores */
 extern SemaphoreHandle_t semNVSEntry;
 extern SemaphoreHandle_t semWifiEntry;
-extern SemaphoreHandle_t semIndEntry;
 
 bool allowSwitchGPIOinput = true; // These variables are used for switch input debouncing
 uint8_t SwitchDebounceCounter = 5;

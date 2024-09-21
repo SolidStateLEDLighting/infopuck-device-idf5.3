@@ -7,7 +7,7 @@
 #include "esp_heap_caps.h"
 
 /* External Semaphores */
-extern SemaphoreHandle_t semIndEntry;
+extern SemaphoreHandle_t semI2CEntry;
 extern SemaphoreHandle_t semWifiEntry;
 
 extern SemaphoreHandle_t semSysRouteLock;
@@ -205,9 +205,82 @@ void System::run(void)
                 initGPIOTask(); // Assigning ISRs to pins and start GPIO Task
 
                 // NOTE: Timer task will be not be started until System initialization is complete.
-                sysInitStep = SYS_INIT::Create_Wifi;
+                sysInitStep = SYS_INIT::Create_I2C;
                 break;
             }
+
+                // case SYS_INIT::Create_Speaker:
+                // {
+                // if (show & _showInit)
+                //     routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): SYS_INIT::Create_Speaker - Step " + std::to_string((int)SYS_INIT::Create_Speaker));
+
+                // if (speak == nullptr)
+                //     speak = new Speaker();
+
+                // if (speak != nullptr)
+                // {
+                //     if (show & _showInit)
+                //         routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): SYS_INIT::Wait_On_Speaker - Step " + std::to_string((int)SYS_INIT::Wait_On_Speaker));
+
+                //     sysInitStep = SYS_INIT::Wait_On_Speaker;
+                // }
+                //     [[fallthrough]];
+                // }
+
+                // case SYS_INIT::Wait_On_Speaker:
+                // {
+                // if (xSemaphoreTake(semSpeakerEntry, 100))
+                // {
+                //     taskHandleWIFIRun = wifi->getRunTaskHandle();
+                //     queHandleWIFICmdRequest = wifi->getCmdRequestQueue();
+                //     xSemaphoreGive(semWifiEntry);
+                //     sysInitStep = SYS_INIT::Create_Wifi;
+                // }
+                //     break;
+                // }
+
+                // Create_Mic,
+                // Wait_On_Mic,
+
+            case SYS_INIT::Create_I2C:
+            {
+                if (show & _showInit)
+                    routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): SYS_INIT::Create_I2C - Step " + std::to_string((int)SYS_INIT::Create_I2C));
+
+                if (i2c == nullptr)
+                    i2c = new I2C(I2C_PORT_0, SDA_PIN_0, SCL_PIN_0, defaultClockSpeed, defaultTimeout);
+
+                if (i2c != nullptr)
+                {
+                    if (show & _showInit)
+                        routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): SYS_INIT::Wait_On_I2C - Step " + std::to_string((int)SYS_INIT::Wait_On_I2C));
+
+                    sysInitStep = SYS_INIT::Wait_On_I2C;
+                }
+                [[fallthrough]];
+            }
+
+            case SYS_INIT::Wait_On_I2C:
+            {
+                if (xSemaphoreTake(semI2CEntry, 100))
+                {
+                    taskHandleI2CRun = i2c->getRunTaskHandle();
+                    queHandleI2CCmdRequest = i2c->getCmdRequestQueue();
+                    xSemaphoreGive(semI2CEntry);
+                    sysInitStep = SYS_INIT::Create_Wifi;
+                }
+                break;
+            }
+
+                // Create_Touch,
+                // Wait_On_Touch,
+                // Create_IMU,
+                // Wait_On_IMU,
+
+                // Create_SPI,
+                // Wait_On_SPI,
+                // Create_Display,
+                // Wait_On_Display,
 
             case SYS_INIT::Create_Wifi:
             {
@@ -234,9 +307,16 @@ void System::run(void)
                     taskHandleWIFIRun = wifi->getRunTaskHandle();
                     queHandleWIFICmdRequest = wifi->getCmdRequestQueue();
                     xSemaphoreGive(semWifiEntry);
-                    sysInitStep = SYS_INIT::Finished;
+                    sysInitStep = SYS_INIT::Start_System_Timer;
                 }
                 break;
+            }
+
+            case SYS_INIT::Start_System_Timer:
+            {
+                initSysTimerTask(); // Starting System Timer task
+                sysInitStep = SYS_INIT::Finished;
+                [[fallthrough]];
             }
 
             case SYS_INIT::Finished:
@@ -247,7 +327,6 @@ void System::run(void)
                 bootCount++;
                 lockSetUint8(&saveToNVSDelaySecs, 2);
 
-                initSysTimerTask(); // Starting System Timer task
                 sysOP = SYS_OP::Run;
                 break;
             }

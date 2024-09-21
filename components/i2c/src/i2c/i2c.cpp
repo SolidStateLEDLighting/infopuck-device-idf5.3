@@ -66,13 +66,13 @@ I2C::I2C(i2c_port_t myPort, gpio_num_t mySda, gpio_num_t myScl, uint32_t mySpeed
     //
     i2cOP = I2C_OP::Init;
     initI2CStep = I2C_INIT::Start;
-    xTaskCreate(runMarshaller, "I2C::Run", 1024 * 3, this, 8, &taskHandleI2C);
+    xTaskCreate(runMarshaller, "I2C::Run", 1024 * 3, this, 8, &taskHandleRun);
 }
 
 I2C::~I2C()
 {
-    TaskHandle_t temp = this->taskHandleI2C;
-    this->taskHandleI2C = nullptr;
+    TaskHandle_t temp = this->taskHandleRun;
+    this->taskHandleRun = nullptr;
     vTaskDelete(temp);
 
     i2c_driver_delete(port);
@@ -90,6 +90,12 @@ I2C::~I2C()
         vSemaphoreDelete(semI2CEntry);
 }
 
+/* Public Member Functions */
+TaskHandle_t &I2C::getRunTaskHandle(void)
+{
+    return taskHandleRun;
+}
+
 QueueHandle_t &I2C::getCmdRequestQueue(void) // Other items in the system need access to the I2C Request Queue
 {
     return xQueueI2CCmdRequests;
@@ -100,11 +106,11 @@ void I2C::runMarshaller(void *arg)
     auto obj = (I2C *)arg;
     obj->run();
 
-    if (obj->taskHandleI2C == nullptr)
+    if (obj->taskHandleRun == nullptr)
         return;
 
-    auto temp = obj->taskHandleI2C;
-    obj->taskHandleI2C = nullptr;
+    auto temp = obj->taskHandleRun;
+    obj->taskHandleRun = nullptr;
     vTaskDelete(temp);
 }
 
@@ -408,7 +414,9 @@ void I2C::writeBytesImmediate(uint8_t devAddr, size_t length, uint8_t *data, int
     ptrI2CCmdResp->dataLength = 1;
     ptrI2CCmdResp->data[0] = rc;
 }
-
+//
+// Utility Functions
+//
 void I2C::busScan() // Scan the I2C bus looking for devices.
 {
     // A scan is performed on the I2C bus looking for devices.  A table is written

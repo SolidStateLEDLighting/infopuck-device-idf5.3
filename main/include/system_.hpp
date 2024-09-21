@@ -15,6 +15,7 @@
 #include "freertos/FreeRTOSConfig.h"
 
 #include <driver/gpio.h> // IDF components
+#include "esp_system.h"
 #include <esp_log.h>
 #include <esp_err.h>
 #include "esp_event.h"
@@ -23,10 +24,14 @@
 #include "esp_log.h"
 #include "esp_pm.h"
 
-#include "nvs/nvs_.hpp"               // Our components
-#include "wifi/wifi_.hpp"             // NOTE: SNTP is completely isolated from the System
+#include "nvs/nvs_.hpp"         // Our components
+#include "display/display_.hpp" //
+#include "i2c/i2c_.hpp"         //
+#include "wifi/wifi_.hpp"       // NOTE: SNTP is completely isolated from the System
 
 class NVS; // Forward declarations
+class Display;
+class I2C;
 class Wifi;
 
 extern "C"
@@ -55,6 +60,16 @@ extern "C"
 
         /* Object References */
         NVS *nvs = nullptr;
+        // Speaker *speak = nullptr;
+        Display *disp = nullptr;
+        I2C *i2c = nullptr;
+        // I2S *i2s_0 = nullptr;
+        // I2S *i2s_1 = nullptr;
+        // IMU *imu = nullptr;
+        // MIC *mic = nullptr;
+        // Speaker *speak = nullptr;
+        // SPI *spi = nullptr;
+        // TOUCH *touch = nullptr;
         Wifi *wifi = nullptr;
 
         uint8_t show = 0;    // Flags
@@ -64,6 +79,7 @@ extern "C"
         uint32_t bootCount = 0;
 
         QueueHandle_t queHandleWIFICmdRequest = nullptr;
+        QueueHandle_t queHandleI2CCmdRequest = nullptr;
 
         void resetHandling(esp_reset_reason_t);
         void setFlags(void);
@@ -126,8 +142,9 @@ extern "C"
         SYS_OP opSys_Return = SYS_OP::Idle;
         SYS_INIT sysInitStep = SYS_INIT::Finished;
 
-        TaskHandle_t taskHandleIndRun = nullptr; // RTOS
-        TaskHandle_t taskHandleSNTPRun = nullptr;
+        TaskHandle_t taskHandleSpeakerRun = nullptr; // RTOS
+        TaskHandle_t taskHandleWifiRun = nullptr;
+        TaskHandle_t taskHandleI2CRun = nullptr;
         TaskHandle_t taskHandleWIFIRun = nullptr;
 
         static void runMarshaller(void *); // Handles all System activites

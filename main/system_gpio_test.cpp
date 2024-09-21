@@ -16,7 +16,6 @@
 /* External Semaphores */
 extern SemaphoreHandle_t semNVSEntry;
 extern SemaphoreHandle_t semWifiEntry;
-extern SemaphoreHandle_t semIndEntry;
 
 //
 // This source file is all about running tests.  All functions here are called only from our runGPIOTask() function.
@@ -45,7 +44,7 @@ void System::test_objectLifecycle_create(SYS_TEST_TYPE *type, uint8_t *index)
         {
             if (xSemaphoreTake(semWifiEntry, 100)) // Get a lock on the object after it initializes
             {
-                taskHandleWIFIRun = wifi->getRunTaskHandle();
+                taskHandleWifiRun = wifi->getRunTaskHandle();
                 queHandleWIFICmdRequest = wifi->getCmdRequestQueue();
                 xSemaphoreGive(semWifiEntry); // Release lock
 

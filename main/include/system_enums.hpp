@@ -76,8 +76,27 @@ enum class SYS_INIT : uint8_t
     Start_Network_Interface,
     Create_Default_Event_Loop,
     Start_GPIO,
+
+    // Create_Speaker,
+    // Wait_On_Speaker,
+    // Create_Mic,
+    // Wait_On_Mic,
+
+    Create_I2C,
+    Wait_On_I2C,
+    // Create_Touch,
+    // Wait_On_Touch,
+    // Create_IMU,
+    // Wait_On_IMU,
+
+    // Create_SPI,
+    // Wait_On_SPI,
+    // Create_Display,
+    // Wait_On_Display,
+
     Create_Wifi,
     Wait_On_Wifi,
+    Start_System_Timer,
     Finished,
     Error,
 };

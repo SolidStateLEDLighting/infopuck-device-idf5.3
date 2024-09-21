@@ -8,8 +8,11 @@ FILE(GLOB_RECURSE SOURCES ${PROJECT_DIR}/main/*.cpp)
 #
 # Included components which are exposed in public header files.
 set(REQUIRES
-    driver
+    esp_system
     esp_timer
+    driver
+    display
+    i2c
     wifi
 )
 #
