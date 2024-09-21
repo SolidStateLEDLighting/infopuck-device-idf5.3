@@ -120,7 +120,7 @@ void Display::run(void)
             case DISPLAY_SHUTDOWN::Finished:
             {
                 if (showDisplay & _showDisplayShdnSteps)
-                    routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): WIFI_SHUTDOWN::Finished");
+                    routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): DISPLAY_SHUTDOWN::Finished");
 
                 // This exits the run function. (notice how the compiler doesn't complain about a missing break statement)
                 // In the runMarshaller, the task is deleted and the task handler set to nullptr.
@@ -130,7 +130,7 @@ void Display::run(void)
             case DISPLAY_SHUTDOWN::Error:
             {
                 if (showDisplay & _showDisplayShdnSteps)
-                    routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): WIFI_SHUTDOWN::Error");
+                    routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): DISPLAY_SHUTDOWN::Error");
 
                 break;
             }

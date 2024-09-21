@@ -7,6 +7,7 @@
 #include "esp_heap_caps.h"
 
 /* External Semaphores */
+extern SemaphoreHandle_t semDisplayEntry;
 extern SemaphoreHandle_t semI2CEntry;
 extern SemaphoreHandle_t semWifiEntry;
 
@@ -267,7 +268,7 @@ void System::run(void)
                     taskHandleI2CRun = i2c->getRunTaskHandle();
                     queHandleI2CCmdRequest = i2c->getCmdRequestQueue();
                     xSemaphoreGive(semI2CEntry);
-                    sysInitStep = SYS_INIT::Create_Wifi;
+                    sysInitStep = SYS_INIT::Create_Display;
                 }
                 break;
             }
@@ -281,6 +282,36 @@ void System::run(void)
                 // Wait_On_SPI,
                 // Create_Display,
                 // Wait_On_Display,
+
+            case SYS_INIT::Create_Display:
+            {
+                if (show & _showInit)
+                    routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): SYS_INIT::Create_Display - Step " + std::to_string((int)SYS_INIT::Create_Display));
+
+                if (disp == nullptr)
+                    disp = new Display();
+
+                if (disp != nullptr)
+                {
+                    if (show & _showInit)
+                        routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): SYS_INIT::Wait_On_Display - Step " + std::to_string((int)SYS_INIT::Wait_On_Display));
+
+                    sysInitStep = SYS_INIT::Wait_On_Display;
+                }
+                [[fallthrough]];
+            }
+
+            case SYS_INIT::Wait_On_Display:
+            {
+                if (xSemaphoreTake(semDisplayEntry, 100))
+                {
+                    taskHandleDisplayRun = disp->getRunTaskHandle();
+                    queHandleDisplayCmdRequest = disp->getCmdRequestQueue();
+                    xSemaphoreGive(semDisplayEntry);
+                    sysInitStep = SYS_INIT::Create_Wifi;
+                }
+                break;
+            }
 
             case SYS_INIT::Create_Wifi:
             {

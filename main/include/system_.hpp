@@ -79,6 +79,7 @@ extern "C"
         uint32_t bootCount = 0;
 
         QueueHandle_t queHandleWIFICmdRequest = nullptr;
+        QueueHandle_t queHandleDisplayCmdRequest = nullptr;
         QueueHandle_t queHandleI2CCmdRequest = nullptr;
 
         void resetHandling(esp_reset_reason_t);
@@ -142,7 +143,7 @@ extern "C"
         SYS_OP opSys_Return = SYS_OP::Idle;
         SYS_INIT sysInitStep = SYS_INIT::Finished;
 
-        TaskHandle_t taskHandleSpeakerRun = nullptr; // RTOS
+        TaskHandle_t taskHandleDisplayRun = nullptr; // RTOS
         TaskHandle_t taskHandleWifiRun = nullptr;
         TaskHandle_t taskHandleI2CRun = nullptr;
         TaskHandle_t taskHandleWIFIRun = nullptr;

@@ -14,7 +14,7 @@ extern SemaphoreHandle_t semDisplayRouteLock;
 // Logging by reference potentially allows a better algorithm for accessing large data throught a pointer.
 void Display::routeLogByRef(LOG_TYPE _type, std::string *_msg)
 {
-    if (xSemaphoreTake(semDisplayRouteLock, portMAX_DELAY)) // We use this lock to prevent sys_evt and wifi_run tasks from having conflicts
+    if (xSemaphoreTake(semDisplayRouteLock, portMAX_DELAY)) // We use this lock to prevent sys_evt and disp_run tasks from having conflicts
     {
         LOG_TYPE type = _type;   // Copy our parameters upon entry before they are over-written by another calling task.
         std::string *msg = _msg; // This will point back to the caller's variable.
@@ -46,7 +46,7 @@ void Display::routeLogByRef(LOG_TYPE _type, std::string *_msg)
 
 void Display::routeLogByValue(LOG_TYPE _type, std::string _msg)
 {
-    if (xSemaphoreTake(semDisplayRouteLock, portMAX_DELAY)) // We use this lock to prevent sys_evt and wifi_run tasks from having conflicts
+    if (xSemaphoreTake(semDisplayRouteLock, portMAX_DELAY)) // We use this lock to prevent sys_evt and disp_run tasks from having conflicts
     {
         LOG_TYPE type = _type; // Copy our parameters upon entry before they are over-written by another calling task.
         std::string msg = _msg;

@@ -91,8 +91,8 @@ enum class SYS_INIT : uint8_t
 
     // Create_SPI,
     // Wait_On_SPI,
-    // Create_Display,
-    // Wait_On_Display,
+    Create_Display,
+    Wait_On_Display,
 
     Create_Wifi,
     Wait_On_Wifi,

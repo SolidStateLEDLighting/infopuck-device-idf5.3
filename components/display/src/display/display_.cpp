@@ -47,14 +47,14 @@ Display::Display()
     dispOP = DISPLAY_OP::Init;
 
     routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): runStackSizek: " + std::to_string(runStackSizeK));
-    xTaskCreate(runMarshaller, "wifi_run", 1024 * runStackSizeK, this, TASK_PRIORITY_MID, &taskHandleRun);
+    xTaskCreate(runMarshaller, "disp_run", 1024 * runStackSizeK, this, TASK_PRIORITY_MID, &taskHandleRun);
 }
 
 Display::~Display()
 {
     // Process of destroying this object:
     // 1) Lock the object with its entry semaphore. (done by the caller)
-    // 2) Send out notifications to the users of Wifi that it is shutting down. (done by caller)
+    // 2) Send out notifications to the users of Display that it is shutting down. (done by caller)
     // 3) Send a task notification to CMD_SHUT_DOWN. (Looks like we are sending it to ourselves here, but this is not so...)
     // 4) Watch the runTaskHandle (and any other possible task handles) and wait for them to clean up and then become nullptr.
     // 5) Clean up other resources created by calling task.
@@ -90,10 +90,10 @@ void Display::setFlags()
     // show |= _showProcess;
     // show |= _showPayload;
 
-    // showDisplay exposes wifi sub-processes.
+    // showDisplay exposes Display sub-processes.
     showDisplay = 0;
-    // showWifi |= _showDisplay_SomeItem;
-    // showWifi |= _showDisplayShdnSteps
+    // showDisplay |= _showDisplay_SomeItem;
+    // showDisplay |= _showDisplayShdnSteps
 }
 
 void Display::setLogLevels()

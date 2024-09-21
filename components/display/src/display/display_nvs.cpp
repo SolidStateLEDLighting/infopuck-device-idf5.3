@@ -16,7 +16,7 @@ void Display::restoreVariablesFromNVS()
         nvs = NVS::getInstance(); // First, get the nvs object handle if didn't already.
 
     if (xSemaphoreTake(semNVSEntry, portMAX_DELAY))
-        ESP_GOTO_ON_ERROR(nvs->openNVSStorage("display"), display_restoreVariablesFromNVS_err, TAG, "nvs->openNVSStorage('wifi') failed");
+        ESP_GOTO_ON_ERROR(nvs->openNVSStorage("display"), display_restoreVariablesFromNVS_err, TAG, "nvs->openNVSStorage('display') failed");
 
     if (show & _showNVS)
         routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): display namespace start");
@@ -79,10 +79,10 @@ void Display::saveVariablesToNVS()
         nvs = NVS::getInstance(); // First, get the nvs object handle if didn't already.
 
     if (xSemaphoreTake(semNVSEntry, portMAX_DELAY))
-        ESP_GOTO_ON_ERROR(nvs->openNVSStorage("display"), display_saveVariablesToNVS_err, TAG, "nvs->openNVSStorage('Display') failed");
+        ESP_GOTO_ON_ERROR(nvs->openNVSStorage("display"), display_saveVariablesToNVS_err, TAG, "nvs->openNVSStorage('display') failed");
 
     if (show & _showNVS)
-        routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): wifi namespace start");
+        routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): display namespace start");
 
     if (successFlag) // Save runStackSizeK
     {
