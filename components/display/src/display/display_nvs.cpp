@@ -4,6 +4,7 @@
 
 /* External Semaphores */
 extern SemaphoreHandle_t semNVSEntry;
+extern SemaphoreHandle_t semDisplayRouteLock;
 
 /* NVS */
 void Display::restoreVariablesFromNVS()
@@ -19,7 +20,7 @@ void Display::restoreVariablesFromNVS()
         ESP_GOTO_ON_ERROR(nvs->openNVSStorage("display"), display_restoreVariablesFromNVS_err, TAG, "nvs->openNVSStorage('display') failed");
 
     if (show & _showNVS)
-        routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): display namespace start");
+        logByValue(ESP_LOG_INFO, semDisplayRouteLock, TAG, std::string(__func__) + "(): display namespace start");
 
     if (successFlag) // Restore runStackSizeK
     {
@@ -35,33 +36,33 @@ void Display::restoreVariablesFromNVS()
             }
 
             if (show & _showNVS)
-                routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): runStackSizeK       is " + std::to_string(runStackSizeK));
+                logByValue(ESP_LOG_INFO, semDisplayRouteLock, TAG, std::string(__func__) + "(): runStackSizeK       is " + std::to_string(runStackSizeK));
         }
 
         if (ret != ESP_OK)
         {
-            routeLogByValue(LOG_TYPE::ERROR, std::string(__func__) + "(): Error, Unable to restore runStackSizeK");
+            logByValue(ESP_LOG_ERROR, semDisplayRouteLock, TAG, std::string(__func__) + "(): Error, Unable to restore runStackSizeK");
             successFlag = false;
         }
     }
 
     if (show & _showNVS)
-        routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): display namespace end");
+        logByValue(ESP_LOG_INFO, semDisplayRouteLock, TAG, std::string(__func__) + "(): display namespace end");
 
     if (successFlag)
     {
         if (show & _showNVS)
-            routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): Success");
+            logByValue(ESP_LOG_INFO, semDisplayRouteLock, TAG, std::string(__func__) + "(): Success");
     }
     else
-        routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): Failed");
+        logByValue(ESP_LOG_INFO, semDisplayRouteLock, TAG, std::string(__func__) + "(): Failed");
 
     nvs->closeNVStorage();
     xSemaphoreGive(semNVSEntry);
     return;
 
 display_restoreVariablesFromNVS_err:
-    routeLogByValue(LOG_TYPE::ERROR, std::string(__func__) + "(): Error " + esp_err_to_name(ret));
+    logByValue(ESP_LOG_ERROR, semDisplayRouteLock, TAG, std::string(__func__) + "(): Error " + esp_err_to_name(ret));
     xSemaphoreGive(semNVSEntry);
 }
 
@@ -82,38 +83,38 @@ void Display::saveVariablesToNVS()
         ESP_GOTO_ON_ERROR(nvs->openNVSStorage("display"), display_saveVariablesToNVS_err, TAG, "nvs->openNVSStorage('display') failed");
 
     if (show & _showNVS)
-        routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): display namespace start");
+        logByValue(ESP_LOG_INFO, semDisplayRouteLock, TAG, std::string(__func__) + "(): display namespace start");
 
     if (successFlag) // Save runStackSizeK
     {
         if (nvs->writeU8IntegerToNVS("runStackSizeK", runStackSizeK) == ESP_OK)
         {
             if (show & _showNVS)
-                routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): runStackSizeK       = " + std::to_string(runStackSizeK));
+                logByValue(ESP_LOG_INFO, semDisplayRouteLock, TAG, std::string(__func__) + "(): runStackSizeK       = " + std::to_string(runStackSizeK));
         }
         else
         {
             successFlag = false;
-            routeLogByValue(LOG_TYPE::ERROR, std::string(__func__) + "(): Unable to writeU8IntegerToNVS runStackSizeK");
+            logByValue(ESP_LOG_ERROR, semDisplayRouteLock, TAG, std::string(__func__) + "(): Unable to writeU8IntegerToNVS runStackSizeK");
         }
     }
 
     if (show & _showNVS)
-        routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): display namespace end");
+        logByValue(ESP_LOG_INFO, semDisplayRouteLock, TAG, std::string(__func__) + "(): display namespace end");
 
     if (successFlag)
     {
         if (show & _showNVS)
-            routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): Success");
+            logByValue(ESP_LOG_INFO, semDisplayRouteLock, TAG, std::string(__func__) + "(): Success");
     }
     else
-        routeLogByValue(LOG_TYPE::ERROR, std::string(__func__) + "(): Failed");
+        logByValue(ESP_LOG_ERROR, semDisplayRouteLock, TAG, std::string(__func__) + "(): Failed");
 
     nvs->closeNVStorage();
     xSemaphoreGive(semNVSEntry);
     return;
 
 display_saveVariablesToNVS_err:
-    routeLogByValue(LOG_TYPE::ERROR, std::string(__func__) + "(): Error " + esp_err_to_name(ret));
+    logByValue(ESP_LOG_ERROR, semDisplayRouteLock, TAG, std::string(__func__) + "(): Error " + esp_err_to_name(ret));
     xSemaphoreGive(semNVSEntry);
 }

@@ -16,13 +16,16 @@
 #include "system_.hpp"
 #include "nvs/nvs_.hpp"
 
+#include "logging/logging_.hpp"
+#include "diagnostics/diagnostics_.hpp"
+
 /* Forward Declarations */
 class System;
 class NVS;
 
 extern "C"
 {
-    class Display
+    class Display : private Logging, private Diagnostics // The "IS-A" relationship
     {
     public:
         Display();
@@ -30,9 +33,6 @@ extern "C"
 
         TaskHandle_t &getRunTaskHandle(void);    // Typically, these unsafe functions are
         QueueHandle_t &getCmdRequestQueue(void); // called at object creation and only once.
-
-        /* Display Diagnostics */
-        void printTaskInfoByColumns(void);
 
     private:
         char TAG[6] = "_disp";
@@ -44,7 +44,9 @@ extern "C"
         /* Taks Handles that we might need */
         TaskHandle_t taskHandleSystemRun = nullptr;
 
-        uint8_t show = 0;
+        uint8_t runStackSizeK = 10; // Default/Minimum stacksize
+
+        uint8_t show = 0;  // show Flags
         uint8_t showDisplay = 0;
 
         void setFlags(void); // Standard Pre-Task Functions
@@ -54,19 +56,10 @@ extern "C"
         void createQueues(void);
         void destroyQueues(void);
 
-        /* Display Diagnostics*/
-        void logTaskInfo(void);
-
-        /* Display Logging */
-        std::string errMsg = "";
-        void routeLogByRef(LOG_TYPE, std::string *);
-        void routeLogByValue(LOG_TYPE, std::string);
-
         /* Display NVS */
         void restoreVariablesFromNVS(void);
         void saveVariablesToNVS(void);
-
-        uint8_t runStackSizeK = 10; // Default/Minimum stacksize
+        
         TaskHandle_t taskHandleRun = nullptr;
 
         QueueHandle_t queueCmdRequests = nullptr;           // DISPLAY <-- (Incomming commands arrive here)

@@ -6,6 +6,7 @@
 
 /* External Semaphores */
 extern SemaphoreHandle_t semNVSEntry;
+extern SemaphoreHandle_t semSNTPRouteLock;
 
 /* NVS */
 void SNTP::restoreVariablesFromNVS()
@@ -20,7 +21,7 @@ void SNTP::restoreVariablesFromNVS()
         ESP_GOTO_ON_ERROR(nvs->openNVSStorage("sntp"), sntp_restoreVariablesFromNVS_err, TAG, "nvs->openNVSStorage('sntp') failed");
 
     if (show & _showNVS)
-        routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): sntp namespace start");
+        logByValue(ESP_LOG_INFO, semSNTPRouteLock, TAG, std::string(__func__) + "(): sntp namespace start");
 
     if (successFlag) // Restore serverIndex
     {
@@ -29,12 +30,12 @@ void SNTP::restoreVariablesFromNVS()
         if (ret == ESP_OK)
         {
             if (show & _showNVS)
-                routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): serverIndex         is " + std::to_string(serverIndex));
+                logByValue(ESP_LOG_INFO, semSNTPRouteLock, TAG, std::string(__func__) + "(): serverIndex         is " + std::to_string(serverIndex));
         }
         else
         {
             successFlag = false;
-            routeLogByValue(LOG_TYPE::ERROR, std::string(__func__) + "(): Error, Unable to restore serverIndex");
+            logByValue(ESP_LOG_ERROR, semSNTPRouteLock, TAG, std::string(__func__) + "(): Error, Unable to restore serverIndex");
         }
     }
 
@@ -52,33 +53,33 @@ void SNTP::restoreVariablesFromNVS()
             }
 
             if (show & _showNVS)
-                routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): timeZone            is " + timeZone); // Confirm our restored value
+                logByValue(ESP_LOG_INFO, semSNTPRouteLock, TAG, std::string(__func__) + "(): timeZone            is " + timeZone); // Confirm our restored value
         }
 
         if (ret != ESP_OK)
         {
             successFlag = false;
-            routeLogByValue(LOG_TYPE::ERROR, std::string(__func__) + "(): Error, Unable to restore timeZone");
+            logByValue(ESP_LOG_ERROR, semSNTPRouteLock, TAG, std::string(__func__) + "(): Error, Unable to restore timeZone");
         }
     }
 
     if (show & _showNVS)
-        routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): sntp namespace end");
+        logByValue(ESP_LOG_INFO, semSNTPRouteLock, TAG, std::string(__func__) + "(): sntp namespace end");
 
     if (successFlag)
     {
         if (show & _showNVS)
-            routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): Success");
+            logByValue(ESP_LOG_INFO, semSNTPRouteLock, TAG, std::string(__func__) + "(): Success");
     }
     else
-        routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): Failed");
+        logByValue(ESP_LOG_INFO, semSNTPRouteLock, TAG, std::string(__func__) + "(): Failed");
 
     nvs->closeNVStorage();
     xSemaphoreGive(semNVSEntry);
     return;
 
 sntp_restoreVariablesFromNVS_err:
-    routeLogByValue(LOG_TYPE::ERROR, std::string(__func__) + "(): Error " + esp_err_to_name(ret));
+    logByValue(ESP_LOG_ERROR, semSNTPRouteLock, TAG, std::string(__func__) + "(): Error " + esp_err_to_name(ret));
     xSemaphoreGive(semNVSEntry);
 }
 
@@ -99,19 +100,19 @@ void SNTP::saveVariablesToNVS()
         ESP_GOTO_ON_ERROR(nvs->openNVSStorage("sntp"), sntp_saveVariablesToNVS_err, TAG, "nvs->openNVSStorage('sntp') failed");
 
     if (show & _showNVS)
-        routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): sntp namespace start");
+        logByValue(ESP_LOG_INFO, semSNTPRouteLock, TAG, std::string(__func__) + "(): sntp namespace start");
 
     if (successFlag) // Save serverIndex
     {
         if (nvs->writeU8IntegerToNVS("serverIndex", serverIndex) == ESP_OK)
         {
             if (show & _showNVS)
-                routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): serverIndex         = " + std::to_string(serverIndex));
+                logByValue(ESP_LOG_INFO, semSNTPRouteLock, TAG, std::string(__func__) + "(): serverIndex         = " + std::to_string(serverIndex));
         }
         else
         {
             successFlag = false;
-            routeLogByValue(LOG_TYPE::ERROR, std::string(__func__) + "(): Unable to save serverIndex");
+            logByValue(ESP_LOG_ERROR, semSNTPRouteLock, TAG, std::string(__func__) + "(): Unable to save serverIndex");
         }
     }
 
@@ -120,31 +121,31 @@ void SNTP::saveVariablesToNVS()
         if (nvs->writeStringToNVS("timeZone", &timeZone) == ESP_OK)
         {
             if (show & _showNVS)
-                routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): timeZone            = " + timeZone);
+                logByValue(ESP_LOG_INFO, semSNTPRouteLock, TAG, std::string(__func__) + "(): timeZone            = " + timeZone);
         }
         else
         {
             successFlag = false;
-            routeLogByValue(LOG_TYPE::ERROR, std::string(__func__) + "(): Unable to save timeZone");
+            logByValue(ESP_LOG_ERROR, semSNTPRouteLock, TAG, std::string(__func__) + "(): Unable to save timeZone");
         }
     }
 
     if (show & _showNVS)
-        routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): sntp namespace end");
+        logByValue(ESP_LOG_INFO, semSNTPRouteLock, TAG, std::string(__func__) + "(): sntp namespace end");
 
     if (successFlag)
     {
         if (show & _showNVS)
-            routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): Success");
+            logByValue(ESP_LOG_INFO, semSNTPRouteLock, TAG, std::string(__func__) + "(): Success");
     }
     else
-        routeLogByValue(LOG_TYPE::ERROR, std::string(__func__) + "(): Failed");
+        logByValue(ESP_LOG_ERROR, semSNTPRouteLock, TAG, std::string(__func__) + "(): Failed");
 
     nvs->closeNVStorage();
     xSemaphoreGive(semNVSEntry);
     return;
 
 sntp_saveVariablesToNVS_err:
-    routeLogByValue(LOG_TYPE::ERROR, std::string(__func__) + "(): Error " + esp_err_to_name(ret));
+    logByValue(ESP_LOG_ERROR, semSNTPRouteLock, TAG, std::string(__func__) + "(): Error " + esp_err_to_name(ret));
     xSemaphoreGive(semNVSEntry);
 }

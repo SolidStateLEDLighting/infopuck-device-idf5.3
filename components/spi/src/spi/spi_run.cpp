@@ -41,7 +41,7 @@ void SPI::run(void) // I2C processing lives here for the lifetime of the object
                     ESP_LOGI(TAG, "Step 1  - Start");
 
                 //if (show & _showInit)
-                    //routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): SPI_INIT::Start");
+                    //logByValue(ESP_LOG_INFO, semSysRouteLock, TAG, std::string(__func__) + "(): SPI_INIT::Start");
                 initSPIStep = SPI_INIT::Load_NVS_Settings;
                 [[fallthrough]];
             }
@@ -71,6 +71,7 @@ void SPI::run(void) // I2C processing lives here for the lifetime of the object
                     .data7_io_num = -1,
                     .max_transfer_sz = 32,
                     .flags = 0,
+                    .isr_cpu_id = ESP_INTR_CPU_AFFINITY_AUTO,
                     .intr_flags = 0,
                 };
 

@@ -69,7 +69,7 @@ void SNTP::createQueues()
     return;
 
 wifi_createQueues_err:
-    routeLogByValue(LOG_TYPE::ERROR, std::string(__func__) + "(): error: " + esp_err_to_name(ret));
+    logByValue(ESP_LOG_ERROR, semSNTPRouteLock, TAG, std::string(__func__) + "(): error: " + esp_err_to_name(ret));
 }
 
 void SNTP::destroySemaphores()

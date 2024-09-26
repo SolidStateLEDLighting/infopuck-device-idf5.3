@@ -6,6 +6,7 @@
 
 /* External Semaphores */
 extern SemaphoreHandle_t semNVSEntry;
+extern SemaphoreHandle_t semWifiRouteLock;
 
 /* NVS */
 void Wifi::restoreVariablesFromNVS()
@@ -21,7 +22,7 @@ void Wifi::restoreVariablesFromNVS()
         ESP_GOTO_ON_ERROR(nvs->openNVSStorage("wifi"), wifi_restoreVariablesFromNVS_err, TAG, "nvs->openNVSStorage('wifi') failed");
 
     if (show & _showNVS)
-        routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): wifi namespace start");
+        logByValue(ESP_LOG_INFO, semWifiRouteLock, TAG, std::string(__func__) + "(): wifi namespace start");
 
     if (successFlag) // Restore runStackSizeK
     {
@@ -37,12 +38,12 @@ void Wifi::restoreVariablesFromNVS()
             }
 
             if (show & _showNVS)
-                routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): runStackSizeK       is " + std::to_string(runStackSizeK));
+                logByValue(ESP_LOG_INFO, semWifiRouteLock, TAG, std::string(__func__) + "(): runStackSizeK       is " + std::to_string(runStackSizeK));
         }
 
         if (ret != ESP_OK)
         {
-            routeLogByValue(LOG_TYPE::ERROR, std::string(__func__) + "(): Error, Unable to restore runStackSizeK");
+            logByValue(ESP_LOG_ERROR, semWifiRouteLock, TAG, std::string(__func__) + "(): Error, Unable to restore runStackSizeK");
             successFlag = false;
         }
     }
@@ -54,12 +55,12 @@ void Wifi::restoreVariablesFromNVS()
         if (ret == ESP_OK)
         {
             if (show & _showNVS)
-                routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): autoConnect         is " + std::to_string(autoConnect));
+                logByValue(ESP_LOG_INFO, semWifiRouteLock, TAG, std::string(__func__) + "(): autoConnect         is " + std::to_string(autoConnect));
         }
         else
         {
             successFlag = false;
-            routeLogByValue(LOG_TYPE::ERROR, std::string(__func__) + "(): Error, Unable to restore autoConnect. Error = " + esp_err_to_name(ret));
+            logByValue(ESP_LOG_ERROR, semWifiRouteLock, TAG, std::string(__func__) + "(): Error, Unable to restore autoConnect. Error = " + esp_err_to_name(ret));
         }
     }
 
@@ -68,12 +69,12 @@ void Wifi::restoreVariablesFromNVS()
         if (nvs->readU8IntegerFromNVS("hostStatus", &hostStatus) == ESP_OK)
         {
             if (show & _showNVS)
-                routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): hostStatus          is " + std::to_string(hostStatus));
+                logByValue(ESP_LOG_INFO, semWifiRouteLock, TAG, std::string(__func__) + "(): hostStatus          is " + std::to_string(hostStatus));
         }
         else
         {
             successFlag = false;
-            routeLogByValue(LOG_TYPE::ERROR, std::string(__func__) + "(): Error, Unable to restore hostStatus");
+            logByValue(ESP_LOG_ERROR, semWifiRouteLock, TAG, std::string(__func__) + "(): Error, Unable to restore hostStatus");
         }
     }
 
@@ -82,12 +83,12 @@ void Wifi::restoreVariablesFromNVS()
         if (nvs->readStringFromNVS("ssidPri", &ssidPri) == ESP_OK)
         {
             if (show & _showNVS)
-                routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): ssidPri             is " + ssidPri);
+                logByValue(ESP_LOG_INFO, semWifiRouteLock, TAG, std::string(__func__) + "(): ssidPri             is " + ssidPri);
         }
         else
         {
             successFlag = false;
-            routeLogByValue(LOG_TYPE::ERROR, std::string(__func__) + "(): Error, Unable to restore ssidPri");
+            logByValue(ESP_LOG_ERROR, semWifiRouteLock, TAG, std::string(__func__) + "(): Error, Unable to restore ssidPri");
         }
     }
 
@@ -96,32 +97,32 @@ void Wifi::restoreVariablesFromNVS()
         if (nvs->readStringFromNVS("ssidPwdPri", &ssidPwdPri) == ESP_OK)
         {
             if (show & _showNVS)
-                routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): ssidPwdPri          is " + ssidPwdPri);
+                logByValue(ESP_LOG_INFO, semWifiRouteLock, TAG, std::string(__func__) + "(): ssidPwdPri          is " + ssidPwdPri);
         }
         else
         {
             successFlag = false;
-            routeLogByValue(LOG_TYPE::ERROR, std::string(__func__) + "(): Error, Unable to restore ssidPwdPri");
+            logByValue(ESP_LOG_ERROR, semWifiRouteLock, TAG, std::string(__func__) + "(): Error, Unable to restore ssidPwdPri");
         }
     }
 
     if (show & _showNVS)
-        routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): wifi namespace end");
+        logByValue(ESP_LOG_INFO, semWifiRouteLock, TAG, std::string(__func__) + "(): wifi namespace end");
 
     if (successFlag)
     {
         if (show & _showNVS)
-            routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): Success");
+            logByValue(ESP_LOG_INFO, semWifiRouteLock, TAG, std::string(__func__) + "(): Success");
     }
     else
-        routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): Failed");
+        logByValue(ESP_LOG_INFO, semWifiRouteLock, TAG, std::string(__func__) + "(): Failed");
 
     nvs->closeNVStorage();
     xSemaphoreGive(semNVSEntry);
     return;
 
 wifi_restoreVariablesFromNVS_err:
-    routeLogByValue(LOG_TYPE::ERROR, std::string(__func__) + "(): Error " + esp_err_to_name(ret));
+    logByValue(ESP_LOG_ERROR, semWifiRouteLock, TAG, std::string(__func__) + "(): Error " + esp_err_to_name(ret));
     xSemaphoreGive(semNVSEntry);
 }
 
@@ -142,19 +143,19 @@ void Wifi::saveVariablesToNVS()
         ESP_GOTO_ON_ERROR(nvs->openNVSStorage("wifi"), wifi_saveVariablesToNVS_err, TAG, "nvs->openNVSStorage('wifi') failed");
 
     if (show & _showNVS)
-        routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): wifi namespace start");
+        logByValue(ESP_LOG_INFO, semWifiRouteLock, TAG, std::string(__func__) + "(): wifi namespace start");
 
     if (successFlag) // Save runStackSizeK
     {
         if (nvs->writeU8IntegerToNVS("runStackSizeK", runStackSizeK) == ESP_OK)
         {
             if (show & _showNVS)
-                routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): runStackSizeK       = " + std::to_string(runStackSizeK));
+                logByValue(ESP_LOG_INFO, semWifiRouteLock, TAG, std::string(__func__) + "(): runStackSizeK       = " + std::to_string(runStackSizeK));
         }
         else
         {
             successFlag = false;
-            routeLogByValue(LOG_TYPE::ERROR, std::string(__func__) + "(): Unable to writeU8IntegerToNVS runStackSizeK");
+            logByValue(ESP_LOG_ERROR, semWifiRouteLock, TAG, std::string(__func__) + "(): Unable to writeU8IntegerToNVS runStackSizeK");
         }
     }
 
@@ -163,12 +164,12 @@ void Wifi::saveVariablesToNVS()
         if (nvs->writeBooleanToNVS("autoConnect", autoConnect) == ESP_OK)
         {
             if (show & _showNVS)
-                routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): autoConnect         = " + std::to_string(autoConnect));
+                logByValue(ESP_LOG_INFO, semWifiRouteLock, TAG, std::string(__func__) + "(): autoConnect         = " + std::to_string(autoConnect));
         }
         else
         {
             successFlag = false;
-            routeLogByValue(LOG_TYPE::ERROR, std::string(__func__) + "(): Unable to save autoConnect");
+            logByValue(ESP_LOG_ERROR, semWifiRouteLock, TAG, std::string(__func__) + "(): Unable to save autoConnect");
         }
     }
 
@@ -177,12 +178,12 @@ void Wifi::saveVariablesToNVS()
         if (nvs->writeU8IntegerToNVS("hostStatus", hostStatus) == ESP_OK)
         {
             if (show & _showNVS)
-                routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): hostStatus          = " + std::to_string(hostStatus));
+                logByValue(ESP_LOG_INFO, semWifiRouteLock, TAG, std::string(__func__) + "(): hostStatus          = " + std::to_string(hostStatus));
         }
         else
         {
             successFlag = false;
-            routeLogByValue(LOG_TYPE::ERROR, std::string(__func__) + "(): Unable to save hostStatus");
+            logByValue(ESP_LOG_ERROR, semWifiRouteLock, TAG, std::string(__func__) + "(): Unable to save hostStatus");
         }
     }
 
@@ -191,12 +192,12 @@ void Wifi::saveVariablesToNVS()
         if (nvs->writeStringToNVS("ssidPri", &ssidPri) == ESP_OK)
         {
             if (show & _showNVS)
-                routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): ssidPri             = " + ssidPri);
+                logByValue(ESP_LOG_INFO, semWifiRouteLock, TAG, std::string(__func__) + "(): ssidPri             = " + ssidPri);
         }
         else
         {
             successFlag = false;
-            routeLogByValue(LOG_TYPE::ERROR, std::string(__func__) + "(): Unable to save ssidPri");
+            logByValue(ESP_LOG_ERROR, semWifiRouteLock, TAG, std::string(__func__) + "(): Unable to save ssidPri");
         }
     }
 
@@ -205,31 +206,31 @@ void Wifi::saveVariablesToNVS()
         if (nvs->writeStringToNVS("ssidPwdPri", &ssidPwdPri) == ESP_OK)
         {
             if (show & _showNVS)
-                routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): ssidPwdPri          = " + ssidPwdPri);
+                logByValue(ESP_LOG_INFO, semWifiRouteLock, TAG, std::string(__func__) + "(): ssidPwdPri          = " + ssidPwdPri);
         }
         else
         {
             successFlag = false;
-            routeLogByValue(LOG_TYPE::ERROR, std::string(__func__) + "(): Unable to save ssidPwdPri");
+            logByValue(ESP_LOG_ERROR, semWifiRouteLock, TAG, std::string(__func__) + "(): Unable to save ssidPwdPri");
         }
     }
 
     if (show & _showNVS)
-        routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): wifi namespace end");
+        logByValue(ESP_LOG_INFO, semWifiRouteLock, TAG, std::string(__func__) + "(): wifi namespace end");
 
     if (successFlag)
     {
         if (show & _showNVS)
-            routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): Success");
+            logByValue(ESP_LOG_INFO, semWifiRouteLock, TAG, std::string(__func__) + "(): Success");
     }
     else
-        routeLogByValue(LOG_TYPE::ERROR, std::string(__func__) + "(): Failed");
+        logByValue(ESP_LOG_ERROR, semWifiRouteLock, TAG, std::string(__func__) + "(): Failed");
 
     nvs->closeNVStorage();
     xSemaphoreGive(semNVSEntry);
     return;
 
 wifi_saveVariablesToNVS_err:
-    routeLogByValue(LOG_TYPE::ERROR, std::string(__func__) + "(): Error " + esp_err_to_name(ret));
+    logByValue(ESP_LOG_ERROR, semWifiRouteLock, TAG, std::string(__func__) + "(): Error " + esp_err_to_name(ret));
     xSemaphoreGive(semNVSEntry);
 }

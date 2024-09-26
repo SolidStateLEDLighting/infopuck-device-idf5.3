@@ -10,12 +10,16 @@
 #include "esp_netif_types.h"
 #include "esp_netif_sntp.h"
 
-class System; // Forward declarations
+#include "logging/logging_.hpp"
+#include "diagnostics/diagnostics_.hpp"
+
+/* Forward Declarations */
+class System;
 class NVS;
 
 extern "C"
 {
-    class SNTP
+    class SNTP  : private Logging, private Diagnostics // The "IS-A" relationship
     {
     public:
         SNTP();
@@ -73,7 +77,6 @@ extern "C"
 
         /* SNTP_Logging */
         std::string errMsg = "";
-        void routeLogByRef(LOG_TYPE, std::string *);
         void routeLogByValue(LOG_TYPE, std::string);
 
         /* SNTP_NVS */

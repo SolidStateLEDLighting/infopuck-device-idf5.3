@@ -164,7 +164,7 @@ void PROV::createQueues()
     return;
 
 prov_createQueues_err:
-    routeLogByValue(LOG_TYPE::ERROR, std::string(__func__) + "(): error: " + esp_err_to_name(ret));
+    logByValue(ESP_LOG_ERROR, semProvRouteLock, TAG, std::string(__func__) + "(): error: " + esp_err_to_name(ret));
 }
 
 void PROV::destroyQueues()

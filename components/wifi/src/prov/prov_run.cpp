@@ -5,7 +5,9 @@
 
 #include "esp_check.h"
 
+/* Local Semaphores */
 extern SemaphoreHandle_t semProvEntry;
+extern SemaphoreHandle_t semProvRouteLock;
 
 void PROV::runMarshaller(void *arg)
 {
@@ -36,16 +38,16 @@ void PROV::run(void)
             case PROV_NOTIFY::CMD_PRINT_TASK_INFO: // Some of these notifications set Directive bits - a follow up CMD_RUN_DIRECTIVES task notification starts the action.
             {
                 if (show & _showRun)
-                    routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): Received PROV_NOTIFY::CMD_PRINT_TASK_INFO");
-                printTaskInfoByColumns();
+                    logByValue(ESP_LOG_INFO, semProvRouteLock, TAG, std::string(__func__) + "(): Received PROV_NOTIFY::CMD_PRINT_TASK_INFO");
+                printTaskInfoByColumns(NULL);
                 break;
             }
 
             case PROV_NOTIFY::CMD_LOG_TASK_INFO:
             {
                 if (show & _showRun)
-                    routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): Received PROV_NOTIFY::CMD_LOG_TASK_INFO");
-                logTaskInfo();
+                    logByValue(ESP_LOG_INFO, semProvRouteLock, TAG, std::string(__func__) + "(): Received PROV_NOTIFY::CMD_LOG_TASK_INFO");
+                logTaskInfo(semProvRouteLock, TAG);
                 break;
             }
             }
@@ -88,7 +90,7 @@ void PROV::run(void)
             case PROV_RUN::Start:
             {
                 if (showPROV & _showProvRun)
-                    routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): PROV_RUN::Start");
+                    logByValue(ESP_LOG_INFO, semProvRouteLock, TAG, std::string(__func__) + "(): PROV_RUN::Start");
 
                 blnCancelProvisioning = false;
                 provRunStep = PROV_RUN::Register_Event_Handlers;
@@ -98,7 +100,7 @@ void PROV::run(void)
             case PROV_RUN::Register_Event_Handlers:
             {
                 if (showPROV & _showProvRun)
-                    routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): PROV_RUN::Register_Event_Handlers - Step " + std::to_string((int)PROV_RUN::Register_Event_Handlers));
+                    logByValue(ESP_LOG_INFO, semProvRouteLock, TAG, std::string(__func__) + "(): PROV_RUN::Register_Event_Handlers - Step " + std::to_string((int)PROV_RUN::Register_Event_Handlers));
 
                 ESP_GOTO_ON_ERROR(esp_event_handler_instance_register(WIFI_PROV_EVENT, ESP_EVENT_ANY_ID, eventHandlerProvisionMarshaller, this, &instanceHndProvEvents), prov_Run_err, TAG, "Register WIFI_PROV_EVENT:ESP_EVENT_ANY_ID  failed");
                 ESP_GOTO_ON_ERROR(esp_event_handler_instance_register(PROTOCOMM_SECURITY_SESSION_EVENT, ESP_EVENT_ANY_ID, eventHandlerProvisionMarshaller, this, &instanceHndSessionEvents), prov_Run_err, TAG, "Register PROTOCOMM_SECURITY_SESSION_EVENT::ESP_EVENT_ANY_ID failed");
@@ -109,7 +111,7 @@ void PROV::run(void)
             case PROV_RUN::Create_Netif_Objects:
             {
                 if (showPROV & _showProvRun)
-                    routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): PROV_RUN::Create_Netif_Objects - Step " + std::to_string((int)PROV_RUN::Create_Netif_Objects));
+                    logByValue(ESP_LOG_INFO, semProvRouteLock, TAG, std::string(__func__) + "(): PROV_RUN::Create_Netif_Objects - Step " + std::to_string((int)PROV_RUN::Create_Netif_Objects));
 
                 defaultSTANetif = esp_netif_create_default_wifi_sta();
 
@@ -136,7 +138,7 @@ void PROV::run(void)
             case PROV_RUN::Wifi_Init:
             {
                 if (showPROV & _showProvRun)
-                    routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): PROV_RUN::Wifi_Init - Step " + std::to_string((int)PROV_RUN::Wifi_Init));
+                    logByValue(ESP_LOG_INFO, semProvRouteLock, TAG, std::string(__func__) + "(): PROV_RUN::Wifi_Init - Step " + std::to_string((int)PROV_RUN::Wifi_Init));
 
                 wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
                 ESP_GOTO_ON_ERROR(esp_wifi_init(&cfg), prov_Run_err, TAG, "PROV_RUN::Wifi_Init: esp_wifi_init() failure.");
@@ -147,7 +149,7 @@ void PROV::run(void)
             case PROV_RUN::Set_Mode:
             {
                 if (showPROV & _showProvRun)
-                    routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): PROV_RUN::Set_Mode - Step " + std::to_string((int)PROV_RUN::Set_Mode));
+                    logByValue(ESP_LOG_INFO, semProvRouteLock, TAG, std::string(__func__) + "(): PROV_RUN::Set_Mode - Step " + std::to_string((int)PROV_RUN::Set_Mode));
 
                 ESP_GOTO_ON_ERROR(esp_wifi_set_mode(WIFI_MODE_APSTA), prov_Run_err, TAG, "PROV_RUN::Set_Mode: esp_wifi_set_mode() failure.");
                 ESP_GOTO_ON_ERROR(esp_wifi_start(), prov_Run_err, TAG, "PROV_RUN::Set_Mode: esp_wifi_start() failure.");
@@ -158,7 +160,7 @@ void PROV::run(void)
             case PROV_RUN::Init_Provisioning_Manager:
             {
                 if (showPROV & _showProvRun)
-                    routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): PROV_RUN::Init_Provisioning_Manager - Step " + std::to_string((int)PROV_RUN::Init_Provisioning_Manager));
+                    logByValue(ESP_LOG_INFO, semProvRouteLock, TAG, std::string(__func__) + "(): PROV_RUN::Init_Provisioning_Manager - Step " + std::to_string((int)PROV_RUN::Init_Provisioning_Manager));
                 //
                 // I tried to discover how to re-route events to another event loop, but could not figure that out.  By default all
                 // events route to the default event loop, but it might be wiser in the future to create a custom event loop and route
@@ -181,7 +183,7 @@ void PROV::run(void)
             case PROV_RUN::Start_Provisioning:
             {
                 if (showPROV & _showProvRun)
-                    routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): PROV_RUN::Start_Provisioning - Step " + std::to_string((int)PROV_RUN::Start_Provisioning));
+                    logByValue(ESP_LOG_INFO, semProvRouteLock, TAG, std::string(__func__) + "(): PROV_RUN::Start_Provisioning - Step " + std::to_string((int)PROV_RUN::Start_Provisioning));
 
                 // The service_key is the Wifi password when scheme is wifi_prov_scheme_softap.  (Minimum expected length: 8, maximum 64 for WPA2-PSK)
                 // Ignored when scheme is wifi_prov_scheme_ble
@@ -193,11 +195,11 @@ void PROV::run(void)
                 char service_name[12];
                 getDeviceServiceName(service_name, sizeof(service_name));
 
-                routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): PROV_RUN::Start_Provisioning: Service name is " + std::string(service_name));
+                logByValue(ESP_LOG_INFO, semProvRouteLock, TAG, std::string(__func__) + "(): PROV_RUN::Start_Provisioning: Service name is " + std::string(service_name));
 
                 if (blnSecurityVersion1)
                 {
-                    routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): PROV_RUN::Start_Provisioning: Security Version 1");
+                    logByValue(ESP_LOG_INFO, semProvRouteLock, TAG, std::string(__func__) + "(): PROV_RUN::Start_Provisioning: Security Version 1");
                     security = WIFI_PROV_SECURITY_1;
 
                     userName = "";
@@ -205,7 +207,7 @@ void PROV::run(void)
                 }
                 else if (blnSecurityVersion2)
                 {
-                    routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): PROV_RUN::Start_Provisioning: Security Version 2");
+                    logByValue(ESP_LOG_INFO, semProvRouteLock, TAG, std::string(__func__) + "(): PROV_RUN::Start_Provisioning: Security Version 2");
                     security = WIFI_PROV_SECURITY_2;
 
                     if (blnSec2ProductionMode)
@@ -228,19 +230,19 @@ void PROV::run(void)
                 if (blnAllowReprovisioning)
                     ESP_GOTO_ON_ERROR(wifi_prov_mgr_disable_auto_stop(100), prov_Run_err, TAG, "wifi_prov_mgr_disable_auto_stop() failed");
 
-                routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): PROV_RUN::Start_Provisioning: Ready to wifi_prov_mgr_start_provisioning...");
+                logByValue(ESP_LOG_INFO, semProvRouteLock, TAG, std::string(__func__) + "(): PROV_RUN::Start_Provisioning: Ready to wifi_prov_mgr_start_provisioning...");
 
                 ESP_GOTO_ON_ERROR(wifi_prov_mgr_start_provisioning(security, (const void *)sec_params, service_name, service_key), prov_Run_err, TAG, "wifi_prov_mgr_start_provisioning() failed");
 
                 // The handler for the optional endpoint created above.  This call must be made after starting the provisioning, and only if the endpoint has already been created above.
                 ESP_GOTO_ON_ERROR(wifi_prov_mgr_endpoint_register("custom-data", eventHandlerCustomMarshaller, this), prov_Run_err, TAG, "wifi_prov_mgr_endpoint_register() failed");
 
-                // routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): PROV_RUN::Start_Provisioning : Ready to generate QR code...");
+                // logByValue(ESP_LOG_INFO, semProvRouteLock, TAG, std::string(__func__) + "(): PROV_RUN::Start_Provisioning : Ready to generate QR code...");
                 // printQRCode(service_name, userName.c_str(), pop.c_str(), PROV_TRANSPORT_SOFTAP); // Print QR code for provisioning
 
                 provRunStep = PROV_RUN::Process_Wait; // Let event handling take the next action.
                 if (showPROV & _showProvRun)
-                    routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): PROV_RUN::Process_Wait - Step " + std::to_string((int)PROV_RUN::Process_Wait));
+                    logByValue(ESP_LOG_INFO, semProvRouteLock, TAG, std::string(__func__) + "(): PROV_RUN::Process_Wait - Step " + std::to_string((int)PROV_RUN::Process_Wait));
                 break;
             }
 
@@ -256,7 +258,7 @@ void PROV::run(void)
             case PROV_RUN::Unregister_Endpoints:
             {
                 if (showPROV & _showProvRun)
-                    routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): PROV_RUN::Unregister_Endpoints - Step " + std::to_string((int)PROV_RUN::Unregister_Endpoints));
+                    logByValue(ESP_LOG_INFO, semProvRouteLock, TAG, std::string(__func__) + "(): PROV_RUN::Unregister_Endpoints - Step " + std::to_string((int)PROV_RUN::Unregister_Endpoints));
 
                 wifi_prov_mgr_endpoint_unregister("custom-data");
                 provRunStep = PROV_RUN::Stop;
@@ -266,13 +268,13 @@ void PROV::run(void)
             case PROV_RUN::Stop:
             {
                 if (showPROV & _showProvRun)
-                    routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): PROV_RUN::Stop - Step " + std::to_string((int)PROV_RUN::Stop));
+                    logByValue(ESP_LOG_INFO, semProvRouteLock, TAG, std::string(__func__) + "(): PROV_RUN::Stop - Step " + std::to_string((int)PROV_RUN::Stop));
 
                 wifi_prov_mgr_stop_provisioning();
 
                 provRunStep = PROV_RUN::Deinitialize;
                 if (showPROV & _showProvRun)
-                    routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): PROV_RUN::Stop_Wait - Step " + std::to_string((int)PROV_RUN::Stop_Wait));
+                    logByValue(ESP_LOG_INFO, semProvRouteLock, TAG, std::string(__func__) + "(): PROV_RUN::Stop_Wait - Step " + std::to_string((int)PROV_RUN::Stop_Wait));
                 break;
             }
 
@@ -288,13 +290,13 @@ void PROV::run(void)
             case PROV_RUN::Deinitialize:
             {
                 if (showPROV & _showProvRun)
-                    routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): PROV_RUN::Deinitialize - Step " + std::to_string((int)PROV_RUN::Deinitialize));
+                    logByValue(ESP_LOG_INFO, semProvRouteLock, TAG, std::string(__func__) + "(): PROV_RUN::Deinitialize - Step " + std::to_string((int)PROV_RUN::Deinitialize));
 
                 wifi_prov_mgr_deinit();
 
                 provRunStep = PROV_RUN::Deinitalization_Wait;
                 if (showPROV & _showProvRun)
-                    routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): PROV_RUN::Deinitalization_Wait - Step " + std::to_string((int)PROV_RUN::Deinitalization_Wait));
+                    logByValue(ESP_LOG_INFO, semProvRouteLock, TAG, std::string(__func__) + "(): PROV_RUN::Deinitalization_Wait - Step " + std::to_string((int)PROV_RUN::Deinitalization_Wait));
                 break;
             }
 
@@ -310,7 +312,7 @@ void PROV::run(void)
             case PROV_RUN::Stop_Destroy_Unregister:
             {
                 if (showPROV & _showProvRun)
-                    routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): PROV_RUN::Stop_Destroy_Unregister - Step " + std::to_string((int)PROV_RUN::Stop_Destroy_Unregister));
+                    logByValue(ESP_LOG_INFO, semProvRouteLock, TAG, std::string(__func__) + "(): PROV_RUN::Stop_Destroy_Unregister - Step " + std::to_string((int)PROV_RUN::Stop_Destroy_Unregister));
 
                 ESP_GOTO_ON_ERROR(esp_wifi_restore(), prov_Run_err, TAG, "PROV_RUN::prov_Stop_Destroy_Unregister_err: esp_wifi_restore() error");
                 ESP_GOTO_ON_ERROR(esp_wifi_stop(), prov_Run_err, TAG, "PROV_RUN::prov_Stop_Destroy_Unregister_err: esp_wifi_stop() failed");
@@ -338,7 +340,7 @@ void PROV::run(void)
             case PROV_RUN::Finished:
             {
                 if (showPROV & _showProvRun)
-                    routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): PROV_RUN::Finished");
+                    logByValue(ESP_LOG_INFO, semProvRouteLock, TAG, std::string(__func__) + "(): PROV_RUN::Finished");
 
                 // printTaskInfoByColumns();
 
@@ -351,7 +353,7 @@ void PROV::run(void)
             case PROV_RUN::Error:
             {
                 if (showPROV & _showProvRun)
-                    routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): PROV_RUN::Error");
+                    logByValue(ESP_LOG_INFO, semProvRouteLock, TAG, std::string(__func__) + "(): PROV_RUN::Error");
 
                 provOP = PROV_OP::Error;
                 provRunStep = PROV_RUN::Finished;
@@ -385,7 +387,7 @@ void PROV::run(void)
 
         case PROV_OP::Error:
         {
-            routeLogByValue(LOG_TYPE::ERROR, errMsg);
+            logByValue(ESP_LOG_ERROR, semProvRouteLock, TAG, errMsg);
             provOP = PROV_OP::Idle;
             break;
         }
@@ -409,7 +411,7 @@ void PROV::runEvents()
     while (xQueueReceive(queueEvents, &evt, 0)) // Process all events in the queue
     {
         if (show & _showEvents)
-            routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): evt.event_base is " + std::string(evt.event_base) + " evt.event_id is " + std::to_string(evt.event_id));
+            logByValue(ESP_LOG_INFO, semProvRouteLock, TAG, std::string(__func__) + "(): evt.event_base is " + std::string(evt.event_base) + " evt.event_id is " + std::to_string(evt.event_id));
 
         // ESP_LOGW(TAG, "queueEvents size is %d", uxQueueMessagesWaiting(queueEvents));
 
@@ -420,21 +422,21 @@ void PROV::runEvents()
             case WIFI_PROV_INIT:
             {
                 if (show & _showEvents)
-                    routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): WIFI_PROV_EVENT:WIFI_PROV_INIT:");
+                    logByValue(ESP_LOG_INFO, semProvRouteLock, TAG, std::string(__func__) + "(): WIFI_PROV_EVENT:WIFI_PROV_INIT:");
                 break;
             }
 
             case WIFI_PROV_START:
             {
                 if (show & _showEvents)
-                    routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): WIFI_PROV_EVENT:WIFI_PROV_START:");
+                    logByValue(ESP_LOG_INFO, semProvRouteLock, TAG, std::string(__func__) + "(): WIFI_PROV_EVENT:WIFI_PROV_START:");
                 break;
             }
 
             case WIFI_PROV_CRED_RECV:
             {
                 if (show & _showEvents)
-                    routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): WIFI_PROV_EVENT:WIFI_PROV_CRED_RECV:");
+                    logByValue(ESP_LOG_INFO, semProvRouteLock, TAG, std::string(__func__) + "(): WIFI_PROV_EVENT:WIFI_PROV_CRED_RECV:");
 
                 wifi_sta_config_t *wifi_sta_cfg = (wifi_sta_config_t *)evt.data; // Copy the data
                 ssidUnderTest = std::string((const char *)wifi_sta_cfg->ssid);
@@ -445,16 +447,16 @@ void PROV::runEvents()
             case WIFI_PROV_CRED_FAIL:
             {
                 if (show & _showEvents)
-                    routeLogByValue(LOG_TYPE::WARN, std::string(__func__) + "(): WIFI_PROV_EVENT:WIFI_PROV_CRED_FAIL");
+                    logByValue(ESP_LOG_WARN, semProvRouteLock, TAG, std::string(__func__) + "(): WIFI_PROV_EVENT:WIFI_PROV_CRED_FAIL");
 
                 ESP_LOGW(TAG, "WIFI_PROV_CRED_FAIL provOP/provRunStep %d/%d", (int)provOP, (int)provRunStep);
 
                 wifi_prov_sta_fail_reason_t *reason = (wifi_prov_sta_fail_reason_t *)evt.data;
 
                 if (*reason == WIFI_PROV_STA_AUTH_ERROR)
-                    routeLogByValue(LOG_TYPE::WARN, std::string(__func__) + "(): WIFI_PROV_EVENT:WIFI_PROV_CRED_FAIL: Station Authentication failed.");
+                    logByValue(ESP_LOG_WARN, semProvRouteLock, TAG, std::string(__func__) + "(): WIFI_PROV_EVENT:WIFI_PROV_CRED_FAIL: Station Authentication failed.");
                 else
-                    routeLogByValue(LOG_TYPE::WARN, std::string(__func__) + "(): WIFI_PROV_EVENT:WIFI_PROV_CRED_FAIL: Wi-Fi Access-Point not found.");
+                    logByValue(ESP_LOG_WARN, semProvRouteLock, TAG, std::string(__func__) + "(): WIFI_PROV_EVENT:WIFI_PROV_CRED_FAIL: Wi-Fi Access-Point not found.");
 
                 if (blnResetProvMgrOnFailure)
                 {
@@ -468,14 +470,14 @@ void PROV::runEvents()
                 break;
 
             prov_WIFI_PROV_CRED_FAIL_err:
-                routeLogByValue(LOG_TYPE::ERROR, std::string(__func__) + "(): WIFI_PROV_CRED_FAIL:Error " + std::to_string(ret) + " " + esp_err_to_name(ret));
+                logByValue(ESP_LOG_ERROR, semProvRouteLock, TAG, std::string(__func__) + "(): WIFI_PROV_CRED_FAIL:Error " + std::to_string(ret) + " " + esp_err_to_name(ret));
                 break;
             }
 
             case WIFI_PROV_CRED_SUCCESS:
             {
                 if (show & _showEvents)
-                    routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): WIFI_PROV_EVENT:WIFI_PROV_CRED_SUCCESS");
+                    logByValue(ESP_LOG_INFO, semProvRouteLock, TAG, std::string(__func__) + "(): WIFI_PROV_EVENT:WIFI_PROV_CRED_SUCCESS");
 
                 WIFI_CmdRequest *wifiCmdRequest = new WIFI_CmdRequest; // This is local and we hand over its address like a pointer
                 wifiCmdRequest->requestedCmd = WIFI_COMMAND::SET_SSID_PRI;
@@ -502,7 +504,7 @@ void PROV::runEvents()
             case WIFI_PROV_END:
             {
                 if (show & _showEvents)
-                    routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): WIFI_PROV_EVENT:WIFI_PROV_END");
+                    logByValue(ESP_LOG_INFO, semProvRouteLock, TAG, std::string(__func__) + "(): WIFI_PROV_EVENT:WIFI_PROV_END");
 
                 provRunStep = PROV_RUN::Unregister_Endpoints;
                 provOP = PROV_OP::Run;
@@ -512,7 +514,7 @@ void PROV::runEvents()
             case WIFI_PROV_DEINIT:
             {
                 if (show & _showEvents)
-                    routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): WIFI_PROV_EVENT:WIFI_PROV_DEINIT");
+                    logByValue(ESP_LOG_INFO, semProvRouteLock, TAG, std::string(__func__) + "(): WIFI_PROV_EVENT:WIFI_PROV_DEINIT");
 
                 provRunStep = PROV_RUN::Stop_Destroy_Unregister;
                 provOP = PROV_OP::Run;
@@ -521,7 +523,7 @@ void PROV::runEvents()
 
             default:
             {
-                routeLogByValue(LOG_TYPE::WARN, std::string(__func__) + "(): WIFI_PROV_EVENT:<default> event_id = " + std::to_string(evt.event_id));
+                logByValue(ESP_LOG_WARN, semProvRouteLock, TAG, std::string(__func__) + "(): WIFI_PROV_EVENT:<default> event_id = " + std::to_string(evt.event_id));
                 break;
             }
             }
@@ -533,27 +535,27 @@ void PROV::runEvents()
             case PROTOCOMM_SECURITY_SESSION_SETUP_OK:
             {
                 if (show & _showEvents)
-                    routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): PROTOCOMM_SECURITY_SESSION_EVENT:PROTOCOMM_SECURITY_SESSION_SETUP_OK");
+                    logByValue(ESP_LOG_INFO, semProvRouteLock, TAG, std::string(__func__) + "(): PROTOCOMM_SECURITY_SESSION_EVENT:PROTOCOMM_SECURITY_SESSION_SETUP_OK");
                 break;
             }
 
             case PROTOCOMM_SECURITY_SESSION_INVALID_SECURITY_PARAMS:
             {
                 if (show & _showEvents)
-                    routeLogByValue(LOG_TYPE::ERROR, std::string(__func__) + "(): PROTOCOMM_SECURITY_SESSION_EVENT:PROTOCOMM_SECURITY_SESSION_INVALID_SECURITY_PARAMS");
+                    logByValue(ESP_LOG_ERROR, semProvRouteLock, TAG, std::string(__func__) + "(): PROTOCOMM_SECURITY_SESSION_EVENT:PROTOCOMM_SECURITY_SESSION_INVALID_SECURITY_PARAMS");
                 break;
             }
 
             case PROTOCOMM_SECURITY_SESSION_CREDENTIALS_MISMATCH:
             {
                 if (show & _showEvents)
-                    routeLogByValue(LOG_TYPE::ERROR, std::string(__func__) + "(): PROTOCOMM_SECURITY_SESSION_EVENT:PROTOCOMM_SECURITY_SESSION_CREDENTIALS_MISMATCH");
+                    logByValue(ESP_LOG_ERROR, semProvRouteLock, TAG, std::string(__func__) + "(): PROTOCOMM_SECURITY_SESSION_EVENT:PROTOCOMM_SECURITY_SESSION_CREDENTIALS_MISMATCH");
                 break;
             }
 
             default:
             {
-                routeLogByValue(LOG_TYPE::WARN, std::string(__func__) + "(): PROTOCOMM_TRANSPORT_BLE_EVENT:default event_id is " + std::to_string(evt.event_id));
+                logByValue(ESP_LOG_WARN, semProvRouteLock, TAG, std::string(__func__) + "(): PROTOCOMM_TRANSPORT_BLE_EVENT:default event_id is " + std::to_string(evt.event_id));
                 break;
             }
             }

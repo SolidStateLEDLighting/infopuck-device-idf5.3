@@ -22,10 +22,10 @@ SPI::SPI(spi_host_device_t spiMyHost, int spiMyMOSIPin, int spiMyMISOPin, int sp
         xSemaphoreGive(semSysEntry);
     }
 
-    setFlags();                // Enable logging statements for any area of concern.
-    setLogLevels();            // Manually sets log levels for other tasks down the call stack.
-    createSemaphores();        // Creates any locking semaphores owned by this object.
-    createQueues();            // We use queues in several areas.
+    setFlags();         // Enable logging statements for any area of concern.
+    setLogLevels();     // Manually sets log levels for other tasks down the call stack.
+    createSemaphores(); // Creates any locking semaphores owned by this object.
+    createQueues();     // We use queues in several areas.
     // restoreVariablesFromNVS(); // Brings back all our persistant data.
 
     //
@@ -43,13 +43,15 @@ SPI::SPI(spi_host_device_t spiMyHost, int spiMyMOSIPin, int spiMyMISOPin, int sp
     //
     xQueueSPICmdRequests = xQueueCreate(1, sizeof(SPI_CmdRequest *));
     ptrSPICmdReq = new SPI_CmdRequest();
-    ptrSPICmdResp = new SPI_Response();
+    ptrSPICmdResp = new SPI_RESPONSE();
     //
     // Start our task and state machine
     //
     spiOP = SPI_OP::Init;
     initSPIStep = SPI_INIT::Start;
-    xTaskCreate(runMarshaller, "SPI::Run", 1024 * 3, this, 8, &taskHandleRun);
+
+    logByValue(ESP_LOG_INFO, semSPIRouteLock, TAG, std::string(__func__) + "(): runStackSizeK: " + std::to_string(runStackSizeK));
+    xTaskCreate(runMarshaller, "SPI::Run", 1024 * 3, this, runStackSizeK, &taskHandleRun);
 }
 
 SPI::~SPI()
@@ -147,7 +149,7 @@ void SPI::createQueues()
     return;
 
 spi_createQueues_err:
-    //routeLogByValue(LOG_TYPE::ERROR, std::string(__func__) + "(): error: " + esp_err_to_name(ret));
+    logByValue(ESP_LOG_ERROR, semSPIRouteLock, TAG, std::string(__func__) + "(): error: " + esp_err_to_name(ret));
 }
 
 void SPI::destroyQueues()

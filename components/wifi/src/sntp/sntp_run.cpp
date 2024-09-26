@@ -3,6 +3,8 @@
 #include "sntp/sntp_.hpp"
 #include "system_.hpp"
 
+extern SemaphoreHandle_t semSNTPRouteLock;
+
 //
 // NOTE: The run function is not called by a local task so it behaves a bit differently.  We enter here from the Wifi object.
 //       Upon entering, we process any events that may have occurred first.   Then we (re)enter any state processing that may be in progress.
@@ -29,7 +31,7 @@ void SNTP::run(void)
         case SNTP_CONN::Start:
         {
             if (showSNTP & _showSNTPConnSteps)
-                routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): SNTP_CONN::Start");
+                logByValue(ESP_LOG_INFO, semSNTPRouteLock, TAG, std::string(__func__) + "(): SNTP_CONN::Start");
 
             connStep = SNTP_CONN::Set_Time_Zone;
             [[fallthrough]];
@@ -38,7 +40,7 @@ void SNTP::run(void)
         case SNTP_CONN::Set_Time_Zone:
         {
             if (showSNTP & _showSNTPConnSteps)
-                routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): SNTP_CONN::Set_Time_Zone - Step " + std::to_string((int)SNTP_CONN::Set_Time_Zone));
+                logByValue(ESP_LOG_INFO, semSNTPRouteLock, TAG, std::string(__func__) + "(): SNTP_CONN::Set_Time_Zone - Step " + std::to_string((int)SNTP_CONN::Set_Time_Zone));
 
             // https://sites.google.com/a/usapiens.com/opnode/time-zones
             // setenv("TZ", "CEST-2", 1);  // This is the time zone for Europe/Berlin
@@ -51,19 +53,19 @@ void SNTP::run(void)
             {
                 timeZone = CONFIG_SNTP_TIME_ZONE; // Right now, favor the Config setting over value in nvs
                 if (showSNTP & _showSNTPConnSteps)
-                    routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): SNTP_CONN::Set_Time_Zone: New time zone setting is " + timeZone);
+                    logByValue(ESP_LOG_INFO, semSNTPRouteLock, TAG, std::string(__func__) + "(): SNTP_CONN::Set_Time_Zone: New time zone setting is " + timeZone);
                 saveVariablesToNVS();
             }
 
             if (showSNTP & _showSNTPConnSteps)
-                routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): timeZone            is " + timeZone);
+                logByValue(ESP_LOG_INFO, semSNTPRouteLock, TAG, std::string(__func__) + "(): timeZone            is " + timeZone);
 
             // On start-up, the time zone variable is always empty.
             // NOTE: You can not read the Time Zone unless one has been commited to memory first.
             setenv("TZ", timeZone.c_str(), 1);
 
             if (showSNTP & _showSNTPConnSteps)
-                routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): SNTP_CONN::Set_Time_Zone: Setting time zone to " + timeZone);
+                logByValue(ESP_LOG_INFO, semSNTPRouteLock, TAG, std::string(__func__) + "(): SNTP_CONN::Set_Time_Zone: Setting time zone to " + timeZone);
 
             tzset();
             connStep = SNTP_CONN::Configure;
@@ -73,7 +75,7 @@ void SNTP::run(void)
         case SNTP_CONN::Configure:
         {
             if (showSNTP & _showSNTPConnSteps)
-                routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): SNTP_CONN::Configure - Step " + std::to_string((int)SNTP_CONN::Configure));
+                logByValue(ESP_LOG_INFO, semSNTPRouteLock, TAG, std::string(__func__) + "(): SNTP_CONN::Configure - Step " + std::to_string((int)SNTP_CONN::Configure));
 
             esp_sntp_stop(); // We can crash of we try to set an operating mode while the client is running.... stop first to be sure all will be ok.
             esp_sntp_setoperatingmode(SNTP_OPMODE_POLL);
@@ -81,7 +83,7 @@ void SNTP::run(void)
             serverName = "time" + std::to_string(serverIndex) + ".google.com";
 
             if (showSNTP & _showSNTPConnSteps)
-                routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): SNTP_CONN::Configure: SNTP Server set to " + serverName);
+                logByValue(ESP_LOG_INFO, semSNTPRouteLock, TAG, std::string(__func__) + "(): SNTP_CONN::Configure: SNTP Server set to " + serverName);
 
             config = {
                 false,                      // smooth_sync
@@ -106,7 +108,7 @@ void SNTP::run(void)
         case SNTP_CONN::Init:
         {
             if (showSNTP & _showSNTPConnSteps)
-                routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): SNTP_CONN::Init - Step " + std::to_string((int)SNTP_CONN::Init));
+                logByValue(ESP_LOG_INFO, semSNTPRouteLock, TAG, std::string(__func__) + "(): SNTP_CONN::Init - Step " + std::to_string((int)SNTP_CONN::Init));
 
             timeValid = false; // At every new Wifi connection to a host, we consider SNTP to be invalid.
 
@@ -118,7 +120,7 @@ void SNTP::run(void)
             connStep = SNTP_CONN::Waiting_For_Response;
 
             if (showSNTP & _showSNTPConnSteps)
-                routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): SNTP_CONN::Waiting_For_Response - Step " + std::to_string((int)SNTP_CONN::Waiting_For_Response));
+                logByValue(ESP_LOG_INFO, semSNTPRouteLock, TAG, std::string(__func__) + "(): SNTP_CONN::Waiting_For_Response - Step " + std::to_string((int)SNTP_CONN::Waiting_For_Response));
             break;
 
         sntp_Init_err:
@@ -132,7 +134,7 @@ void SNTP::run(void)
             if (timeValid) // Did our time synchronization arrive?
             {
                 if (showSNTP & _showSNTPConnSteps)
-                    routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): SNTP_CONN::Waiting_For_Response: EPOCH TIME RECEIVED");
+                    logByValue(ESP_LOG_INFO, semSNTPRouteLock, TAG, std::string(__func__) + "(): SNTP_CONN::Waiting_For_Response: EPOCH TIME RECEIVED");
 
                 saveVariablesToNVS();       // There is a possibility that SNTP server index changed during our process -- call on save.
                 connStep = SNTP_CONN::Idle; // Our SNTP process is over, go to an idle state.
@@ -146,7 +148,7 @@ void SNTP::run(void)
                 if ((waitingOnEpochTimeSecMax - waitingOnEpochTimeSec) < 4) // Show a count down just before the time out.
                 {
                     if (showSNTP & _showSNTPConnSteps)
-                        routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): Waiting response from " + serverName + ": " + std::to_string(waitingOnEpochTimeSecMax - waitingOnEpochTimeSec) + " Secs remain before server rotation...");
+                        logByValue(ESP_LOG_INFO, semSNTPRouteLock, TAG, std::string(__func__) + "(): Waiting response from " + serverName + ": " + std::to_string(waitingOnEpochTimeSecMax - waitingOnEpochTimeSec) + " Secs remain before server rotation...");
                 }
 
                 if (waitingOnEpochTimeSec > waitingOnEpochTimeSecMax)
@@ -155,7 +157,7 @@ void SNTP::run(void)
                         serverIndex = 1;
 
                     if (showSNTP & _showSNTPConnSteps)
-                        routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): Changing server to " + std::to_string(serverIndex));
+                        logByValue(ESP_LOG_INFO, semSNTPRouteLock, TAG, std::string(__func__) + "(): Changing server to " + std::to_string(serverIndex));
 
                     connStep = SNTP_CONN::Configure;
                     break;
@@ -181,7 +183,7 @@ void SNTP::run(void)
 
     case SNTP_OP::Error:
     {
-        routeLogByValue(LOG_TYPE::ERROR, errMsg);
+        logByValue(ESP_LOG_ERROR, semSNTPRouteLock, TAG, errMsg);
         sntpOP = SNTP_OP::Idle;
         break;
     }
@@ -205,12 +207,12 @@ void SNTP::runEvents()
     while (xQueueReceive(queueEvents, &evt, 0))
     {
         if (show & _showEvents)
-            routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): evt.blnTimeArrived is " + std::to_string(evt.blnTimeArrived));
+            logByValue(ESP_LOG_INFO, semSNTPRouteLock, TAG, std::string(__func__) + "(): evt.blnTimeArrived is " + std::to_string(evt.blnTimeArrived));
 
         if (evt.blnTimeArrived == true)
         {
             if (show & _showEvents)
-                routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): Printing Time...");
+                logByValue(ESP_LOG_INFO, semSNTPRouteLock, TAG, std::string(__func__) + "(): Printing Time...");
 
             timeValid = true; // Mark SNTP Time valid.  This will declare our System Time value and stop any waiting processes.
 
@@ -224,7 +226,7 @@ void SNTP::runEvents()
             strftime(strftimeBuf, sizeof(currentTime_info), "%c", &currentTime_info);
 
             if (show & _showEvents)
-                routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): Notification of a time synchronization event.  " + std::string(strftimeBuf));
+                logByValue(ESP_LOG_INFO, semSNTPRouteLock, TAG, std::string(__func__) + "(): Notification of a time synchronization event.  " + std::string(strftimeBuf));
         }
     }
 }

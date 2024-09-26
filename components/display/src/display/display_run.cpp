@@ -3,12 +3,13 @@
 
 /* External Semaphores */
 extern SemaphoreHandle_t semDisplayEntry;
+extern SemaphoreHandle_t semDisplayRouteLock;
 
 void Display::runMarshaller(void *arg)
 {
     ((Display *)arg)->run();
     vTaskDelete(NULL);
-    ((Display *)arg)->taskHandleRun = nullptr; // This doesn't happen automatically but we look at this variable for validity, so set it manually.
+    ((Display *)arg)->taskHandleRun = nullptr; // This doesn't happen automatically but we look at this variable for validity, so set it to nullptr manually.
 }
 
 void Display::run(void)
@@ -37,28 +38,28 @@ void Display::run(void)
             case DISPLAY_NOTIFY::NFY_EMPTY: // Some of these notifications set Directive bits - a follow up CMD_RUN_DIRECTIVES task notification starts the action.
             {
                 if (show & _showRun)
-                    routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): Received DISPLAY_NOTIFY::NFY_EMPTY");
+                    logByValue(ESP_LOG_INFO, semDisplayRouteLock, TAG, std::string(__func__) + "(): Received DISPLAY_NOTIFY::NFY_EMPTY");
                 break;
             }
 
             case DISPLAY_NOTIFY::CMD_EMPTY:
             {
                 if (show & _showRun)
-                    routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): Received DISPLAY_NOTIFY::CMD_EMPTY");
+                    logByValue(ESP_LOG_INFO, semDisplayRouteLock, TAG, std::string(__func__) + "(): Received DISPLAY_NOTIFY::CMD_EMPTY");
                 break;
             }
 
             case DISPLAY_NOTIFY::CMD_LOG_TASK_INFO:
             {
                 if (show & _showRun)
-                    routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): Received DISPLAY_NOTIFY::CMD_LOG_TASK_INFO");
+                    logByValue(ESP_LOG_INFO, semDisplayRouteLock, TAG, std::string(__func__) + "(): Received DISPLAY_NOTIFY::CMD_LOG_TASK_INFO");
                 break;
             }
 
             case DISPLAY_NOTIFY::CMD_SHUT_DOWN:
             {
                 if (show & _showRun)
-                    routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): Received DISPLAY_NOTIFY::CMD_SHUT_DOWN");
+                    logByValue(ESP_LOG_INFO, semDisplayRouteLock, TAG, std::string(__func__) + "(): Received DISPLAY_NOTIFY::CMD_SHUT_DOWN");
                 break;
             }
             }
@@ -72,16 +73,16 @@ void Display::run(void)
                 {
                     if (show & _showPayload)
                     {
-                        routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): cmd is  " + std::to_string((int)ptrDisplayCmdRequest->requestedCmd));
+                        logByValue(ESP_LOG_INFO, semDisplayRouteLock, TAG, std::string(__func__) + "(): cmd is  " + std::to_string((int)ptrDisplayCmdRequest->command));
                     }
                 }
 
-                switch (ptrDisplayCmdRequest->requestedCmd)
+                switch (ptrDisplayCmdRequest->command)
                 {
                 case DISPLAY_COMMAND::DO_SOMETHING:
                 {
                     if (show & _showRun)
-                        routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): Received the command DISPLAY_COMMAND::DO_SOMETHING");
+                        logByValue(ESP_LOG_INFO, semDisplayRouteLock, TAG, std::string(__func__) + "(): Received the command DISPLAY_COMMAND::DO_SOMETHING");
                     saveVariablesToNVS(); // Can't afford a delay here.
                     break;
                 }
@@ -92,11 +93,6 @@ void Display::run(void)
 
         switch (dispOP)
         {
-        case DISPLAY_OP::Run:
-        {
-            break;
-        }
-
         case DISPLAY_OP::Shutdown:
         {
             // Positionally, it is important for Shutdown to be serviced right after it is called for.  We don't want other possible operations
@@ -110,7 +106,7 @@ void Display::run(void)
             case DISPLAY_SHUTDOWN::Start:
             {
                 if (showDisplay & _showDisplayShdnSteps)
-                    routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): DISPLAY_SHUTDOWN::Start");
+                    logByValue(ESP_LOG_INFO, semDisplayRouteLock, TAG, std::string(__func__) + "(): DISPLAY_SHUTDOWN::Start");
 
                 cadenceTimeDelay = 10; // Always allow a bit of delay in Run processing.
                 dispShdnStep = DISPLAY_SHUTDOWN::Finished;
@@ -120,7 +116,7 @@ void Display::run(void)
             case DISPLAY_SHUTDOWN::Finished:
             {
                 if (showDisplay & _showDisplayShdnSteps)
-                    routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): DISPLAY_SHUTDOWN::Finished");
+                    logByValue(ESP_LOG_INFO, semDisplayRouteLock, TAG, std::string(__func__) + "(): DISPLAY_SHUTDOWN::Finished");
 
                 // This exits the run function. (notice how the compiler doesn't complain about a missing break statement)
                 // In the runMarshaller, the task is deleted and the task handler set to nullptr.
@@ -130,11 +126,17 @@ void Display::run(void)
             case DISPLAY_SHUTDOWN::Error:
             {
                 if (showDisplay & _showDisplayShdnSteps)
-                    routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): DISPLAY_SHUTDOWN::Error");
+                    logByValue(ESP_LOG_INFO, semDisplayRouteLock, TAG, std::string(__func__) + "(): DISPLAY_SHUTDOWN::Error");
 
                 break;
             }
             }
+            break;
+        }
+
+        case DISPLAY_OP::Run:
+        {
+            // Here, we may be examining and acting on state changes
             break;
         }
 
@@ -145,7 +147,7 @@ void Display::run(void)
             case DISPLAY_INIT::Start:
             {
                 if (show & _showInit)
-                    routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): DISPLAY_INIT::Start");
+                    logByValue(ESP_LOG_INFO, semDisplayRouteLock, TAG, std::string(__func__) + "(): DISPLAY_INIT::Start");
 
                 cadenceTimeDelay = 10; // Don't permit scheduler delays in Run processing.
 
@@ -156,7 +158,7 @@ void Display::run(void)
             case DISPLAY_INIT::Finished:
             {
                 if (show & _showInit)
-                    routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): DISPLAY_INIT::Finished");
+                    logByValue(ESP_LOG_INFO, semDisplayRouteLock, TAG, std::string(__func__) + "(): DISPLAY_INIT::Finished");
 
                 cadenceTimeDelay = 250;          // Return to relaxed scheduling.
                 xSemaphoreGive(semDisplayEntry); // Allow entry from any other calling tasks
@@ -167,7 +169,7 @@ void Display::run(void)
             case DISPLAY_INIT::Error:
             {
                 if (show & _showInit)
-                    routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): DISPLAY_INIT::Error");
+                    logByValue(ESP_LOG_INFO, semDisplayRouteLock, TAG, std::string(__func__) + "(): DISPLAY_INIT::Error");
                 break;
             }
             }
@@ -178,7 +180,7 @@ void Display::run(void)
         {
             cadenceTimeDelay = 250; // Return to relaxed scheduling.
 
-            routeLogByValue(LOG_TYPE::ERROR, errMsg);
+            logByValue(ESP_LOG_ERROR, semDisplayRouteLock, TAG, "DISPLAY_OP::Error");
             dispOP = DISPLAY_OP::Idle;
             [[fallthrough]];
         }

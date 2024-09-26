@@ -7,14 +7,18 @@
 #include <wifi_provisioning/manager.h> // ESP libraries
 #include <wifi_provisioning/scheme_softap.h>
 
+#include "logging/logging_.hpp"
+#include "diagnostics/diagnostics_.hpp"
+
 ESP_EVENT_DECLARE_BASE(PROTOCOMM_SECURITY_SESSION_EVENT);
 
-class System; // Forward declarations
+/* Forward Declarations */
+class System;
 class NVS;
 
 extern "C"
 {
-    class PROV
+    class PROV : private Logging, private Diagnostics // The "IS-A" relationship
     {
     public:
         PROV(QueueHandle_t);
@@ -80,20 +84,11 @@ extern "C"
 
         wifi_prov_mgr_config_t config;
 
-        /* PROV_Diagnostics */
-        void printTaskInfoByColumns(void);
-        void logTaskInfo(void);
-
         /* PROV_Events */
         static void eventHandlerProvisionMarshaller(void *, esp_event_base_t, int32_t, void *);
         void eventHandlerProvision(esp_event_base_t, int32_t, void *);
         static esp_err_t eventHandlerCustomMarshaller(uint32_t, const uint8_t *, ssize_t, uint8_t **, ssize_t *, void *);
         esp_err_t eventHandlerCustom(uint32_t, const uint8_t *, ssize_t, uint8_t **, ssize_t *);
-
-        /* PROV_Logging */
-        std::string errMsg = "";
-        void routeLogByRef(LOG_TYPE, std::string *);
-        void routeLogByValue(LOG_TYPE, std::string);
 
         /* PROV_Run */
         PROV_OP provOP = PROV_OP::Idle;        // Object States

@@ -1,5 +1,8 @@
 #include "wifi/wifi_.hpp"
 
+/* Local Semaphores */
+extern SemaphoreHandle_t semWifiRouteLock;
+
 /* Event Callback Functions - Wifi */
 void Wifi::eventHandlerWifiMarshaller(void *arg, esp_event_base_t event_base, int32_t event_id, void *event_data)
 {
@@ -13,11 +16,11 @@ void Wifi::eventHandlerWifi(esp_event_base_t event_base, int32_t event_id, void 
     evt.event_id = event_id;
 
     if (show & _showEvents)
-        routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): Called by the task named: " + std::string(pcTaskGetName(NULL)));
+        logByValue(ESP_LOG_INFO, semWifiRouteLock, TAG, std::string(__func__) + "(): Called by the task named: " + std::string(pcTaskGetName(NULL)));
 
     if (show & _showEvents)
-        routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): evt.event_base is " + std::string(evt.event_base) + " evt.event_id is " + std::to_string(evt.event_id));
+        logByValue(ESP_LOG_INFO, semWifiRouteLock, TAG, std::string(__func__) + "(): evt.event_base is " + std::string(evt.event_base) + " evt.event_id is " + std::to_string(evt.event_id));
 
     if (xQueueSendToBack(queueEvents, &evt, 0) == pdFALSE)
-        routeLogByValue(LOG_TYPE::ERROR, std::string(__func__) + "(): Wifi Event queue over-flowed!");
+        logByValue(ESP_LOG_INFO, semWifiRouteLock, TAG, std::string(__func__) + "(): Wifi Event queue over-flowed!");
 }

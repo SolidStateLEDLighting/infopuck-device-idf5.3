@@ -4,7 +4,7 @@
 # NOTE: Anytime you add a new .cpp files, the entire project must be cleaned and rebuilt or the new files
 # will not be included in the compilation process.  This is the one drawback of GLOB_RECURSE implicit inclusion.
 #
-FILE(GLOB_RECURSE SOURCES ${PROJECT_DIR}/main/*.cpp)
+FILE(GLOB_RECURSE SOURCES ${PROJECT_DIR}/main/src/*.cpp)
 #
 # Included components which are exposed in public header files.
 set(REQUIRES
@@ -28,7 +28,8 @@ set(PRIV_REQUIRES
 #
 #
 set(COMPONENT_ADD_INCLUDEDIRS
-    ${CMAKE_CURRENT_LIST_DIR}/include
+    ${CMAKE_CURRENT_LIST_DIR}/include/system
+    ${CMAKE_CURRENT_LIST_DIR}/include/logging
 )
 #
 #

@@ -3,6 +3,8 @@
 
 extern SNTP *ptrSNTPInternal;
 
+extern SemaphoreHandle_t semSNTPRouteLock;
+
 /* Event Callback Functions - SNTP */
 void SNTP::eventHandlerSNTPMarshaller(struct timeval *tv)
 {
@@ -19,11 +21,11 @@ void SNTP::eventHandlerSNTP(struct timeval *tv)
     evt.blnTimeArrived = true;
 
     if (show & _showEvents)
-        routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): Called by the task named: " + std::string(pcTaskGetName(NULL)));
+        logByValue(ESP_LOG_INFO, semSNTPRouteLock, TAG, std::string(__func__) + "(): Called by the task named: " + std::string(pcTaskGetName(NULL)));
 
     if (show & _showEvents)
-        routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): evt.blnTimeArrived is " + std::to_string(evt.blnTimeArrived));
+        logByValue(ESP_LOG_INFO, semSNTPRouteLock, TAG, std::string(__func__) + "(): evt.blnTimeArrived is " + std::to_string(evt.blnTimeArrived));
 
     if (xQueueSendToBack(queueEvents, &evt, 0) == pdFALSE)
-        routeLogByValue(LOG_TYPE::ERROR, std::string(__func__) + "(): SNTP Event queue over-flowed!");
+        logByValue(ESP_LOG_ERROR, semSNTPRouteLock, TAG, std::string(__func__) + "(): SNTP Event queue over-flowed!");
 }

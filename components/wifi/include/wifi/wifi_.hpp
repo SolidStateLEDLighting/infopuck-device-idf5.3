@@ -16,8 +16,11 @@
 
 #include "system_.hpp"
 #include "nvs/nvs_.hpp"
+#include "logging/logging_.hpp"
+#include "diagnostics/diagnostics_.hpp"
 #include "sntp/sntp_.hpp"
 #include "prov/prov_.hpp"
+
 
 /* Forward Declarations */
 class System;
@@ -27,17 +30,14 @@ class PROV;
 
 extern "C"
 {
-    class Wifi
+    class Wifi  : private Logging, private Diagnostics // The "IS-A" relationship
     {
     public:
         Wifi();
         ~Wifi();
 
-        TaskHandle_t getRunTaskHandle(void);
-        QueueHandle_t getCmdRequestQueue(void); // Outside objects must ask for the CmdQueue
-
-        /* Wifi_Diagnostics */
-        void printTaskInfoByColumns(void);
+        TaskHandle_t &getRunTaskHandle(void);
+        QueueHandle_t &getCmdRequestQueue(void); // Outside objects must ask for the CmdQueue
 
     private:
         Wifi(const Wifi &) = delete;           // Disable copy constructor
@@ -75,9 +75,6 @@ extern "C"
         SNTP *sntp = nullptr;
         PROV *prov = nullptr;
 
-        /* Wifi_Diagnostic */
-        void logTaskInfo(void);
-
         /* Wifi_Events */
         uint32_t wifiEvents = 0;
         esp_event_handler_instance_t instanceHandlerWifiEventAnyId = nullptr; // Event Registration handles
@@ -85,11 +82,6 @@ extern "C"
 
         static void eventHandlerWifiMarshaller(void *, esp_event_base_t, int32_t, void *);
         void eventHandlerWifi(esp_event_base_t, int32_t, void *);
-
-        /* Wifi_Logging */
-        std::string errMsg = "";
-        void routeLogByRef(LOG_TYPE, std::string *);
-        void routeLogByValue(LOG_TYPE, std::string);
 
         /* Wifi_NVS */
         void restoreVariablesFromNVS(void);

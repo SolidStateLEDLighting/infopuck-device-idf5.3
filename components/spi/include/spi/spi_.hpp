@@ -24,11 +24,12 @@
 
 #include "system_.hpp"
 #include "nvs/nvs_.hpp"
+#include "logging/logging_.hpp"
+#include "diagnostics/diagnostics_.hpp"
 
-class System; /* Forward Declarations */
+/* Forward Declarations */
+class System;
 class NVS;
-
-extern SemaphoreHandle_t semSPIEntry;
 
 extern "C"
 {
@@ -49,7 +50,7 @@ extern "C"
 
     // No Direct Routing in IO_MUX for SPI3 in any device
 
-    class SPI
+    class SPI  : private Logging, private Diagnostics // The "IS-A" relationship
     {
     public:
         SPI(spi_host_device_t, int, int, int);
@@ -62,13 +63,11 @@ extern "C"
         //
         // Private variables
         //
-        char TAG[5] = "_spi";
+        char TAG[6] = "_spi ";
 
         /* Object References */
         System *sys = nullptr;
         NVS *nvs = nullptr;
-        
-        bool HasMux = false;
 
         spi_host_device_t spiHost; //
         int spiMOSIPin = 0;        // Initial values
@@ -91,10 +90,11 @@ extern "C"
         //
         // RTOS Related variables/functions
         //
+        uint8_t runStackSizeK = 8;           // Default/Minimum stacksize
         TaskHandle_t taskHandleRun = nullptr;
         QueueHandle_t xQueueSPICmdRequests;
         SPI_CmdRequest *ptrSPICmdReq;
-        SPI_Response *ptrSPICmdResp;
+        SPI_RESPONSE *ptrSPICmdResp;
 
         // spi_cmd_handle_t spi_cmd_handle = nullptr;
 

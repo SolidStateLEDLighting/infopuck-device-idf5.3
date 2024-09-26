@@ -18,22 +18,24 @@
 //     MODE_4, // CPOLARITY=1, CPHASE=1
 // };
 
-enum class SPI_ACTION : uint8_t;
+enum class SPI_COMMAND : uint8_t;
+enum class SPI_RESPONSE : uint8_t;
+
 
 struct SPI_CmdRequest
 {
     QueueHandle_t QueueToSendResponse; // 4 bytes.   If NULL, no response will be sent.
     uint8_t busDevAddress;
-    SPI_ACTION action;
+    SPI_COMMAND command;
     uint8_t deviceRegister;
     uint8_t dataLength;
     uint8_t data[32];
     bool debug = false;
 };
 
-struct SPI_Response
+struct SPI_CmdResponse
 {
-    SPI_ACTION result;
+    SPI_RESPONSE response;
     uint8_t deviceRegister;
     uint8_t dataLength;
     uint8_t data[32];
@@ -41,9 +43,14 @@ struct SPI_Response
 //
 // Request/Response
 //
-enum class SPI_ACTION : uint8_t
+enum class SPI_COMMAND : uint8_t
 {
     Trans,
+};
+
+enum class SPI_RESPONSE : uint8_t
+{
+    None,
 };
 
 enum class SPI_OP : uint8_t

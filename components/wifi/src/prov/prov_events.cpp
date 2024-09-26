@@ -3,6 +3,9 @@
 
 #include "esp_check.h"
 
+/* Local Semaphores */
+extern SemaphoreHandle_t semProvRouteLock;
+
 /* Event Callback Functions - Provision */
 void PROV::eventHandlerProvisionMarshaller(void *arg, esp_event_base_t event_base, int32_t event_id, void *event_data)
 {
@@ -11,7 +14,7 @@ void PROV::eventHandlerProvisionMarshaller(void *arg, esp_event_base_t event_bas
 
 void PROV::eventHandlerProvision(esp_event_base_t event_base, int32_t event_id, void *event_data) // The System Event task (sys_evt) will arrive here to drive this handler.
 {
-    // routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): Called by the task named: " + std::string(pcTaskGetName(NULL)));
+    // logByValue(ESP_LOG_INFO, semProvRouteLock, TAG, std::string(__func__) + "(): Called by the task named: " + std::string(pcTaskGetName(NULL)));
     //
     // The idea of our event handlers is to copy the event data that arrives over to a queue (queueEvents).  The run task will pull that event
     // from queueEvents inside the Run task so all the variables are clear to be operated on without any confict between tasks.
@@ -30,10 +33,10 @@ void PROV::eventHandlerProvision(esp_event_base_t event_base, int32_t event_id, 
         memcpy(&evt.data, event_data, sizeof(wifi_prov_sta_fail_reason_t));
 
     if (show & _showEvents)
-        routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): evt.event_base is " + std::string(evt.event_base) + " evt.event_id is " + std::to_string(evt.event_id));
+        logByValue(ESP_LOG_INFO, semProvRouteLock, TAG, std::string(__func__) + "(): evt.event_base is " + std::string(evt.event_base) + " evt.event_id is " + std::to_string(evt.event_id));
 
     if (xQueueSendToBack(queueEvents, &evt, 0) == pdFALSE)
-        routeLogByValue(LOG_TYPE::ERROR, std::string(__func__) + "(): Provision Event queue over-flowed!");
+        logByValue(ESP_LOG_ERROR, semProvRouteLock, TAG, std::string(__func__) + "(): Provision Event queue over-flowed!");
 
     // ESP_LOGW(TAG, "queueEvents size is %d", uxQueueMessagesWaiting(queueEvents));
 }

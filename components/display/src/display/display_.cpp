@@ -1,4 +1,3 @@
-
 #include "display/display_.hpp"
 #include "system_.hpp" // Class structure and variables
 
@@ -12,7 +11,7 @@ SemaphoreHandle_t semDisplayRouteLock = NULL;
 extern SemaphoreHandle_t semSysEntry;
 
 /* Construction / Destruction */
-Display::Display()
+Display::Display() : Logging(), Diagnostics()
 {
     // Process of creating this object:
     // 1) Get the system run task handle
@@ -43,10 +42,10 @@ Display::Display()
 
     xSemaphoreTake(semDisplayEntry, portMAX_DELAY); // Take our semaphore and thereby lock entry to this object during its initialization.
 
-    dispInitStep = DISPLAY_INIT::Start; // Allow the object to initialize.  This takes some time.
+    dispInitStep = DISPLAY_INIT::Start; // Allow the object to initialize.  This may take some time.
     dispOP = DISPLAY_OP::Init;
 
-    routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): runStackSizek: " + std::to_string(runStackSizeK));
+    logByValue(ESP_LOG_INFO, semDisplayRouteLock, TAG, std::string(__func__) + "(): runStackSizek: " + std::to_string(runStackSizeK));
     xTaskCreate(runMarshaller, "disp_run", 1024 * runStackSizeK, this, TASK_PRIORITY_MID, &taskHandleRun);
 }
 
@@ -98,7 +97,7 @@ void Display::setFlags()
 
 void Display::setLogLevels()
 {
-    if ((show + showDisplay) > 0)                // Normally, we are interested in the variables inside our object.
+    if ((show + showDisplay) > 0)             // Normally, we are interested in the variables inside our object.
         esp_log_level_set(TAG, ESP_LOG_INFO); // If we have any flags set, we need to be sure to turn on the logging so we can see them.
     else
         esp_log_level_set(TAG, ESP_LOG_ERROR); // Likewise, we turn off logging if we are not looking for anything.
@@ -153,7 +152,7 @@ void Display::createQueues()
     return;
 
 display_createQueues_err:
-    routeLogByValue(LOG_TYPE::ERROR, std::string(__func__) + "(): error: " + esp_err_to_name(ret));
+    logByValue(ESP_LOG_ERROR, semDisplayRouteLock, TAG, std::string(__func__) + "(): error: " + esp_err_to_name(ret));
 }
 
 void Display::destroyQueues()

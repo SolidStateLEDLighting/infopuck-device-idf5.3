@@ -52,7 +52,7 @@ Wifi::Wifi()
     wifiInitStep = WIFI_INIT::Start; // Allow the object to initialize.  This takes some time.
     wifiOP = WIFI_OP::Init;
 
-    routeLogByValue(LOG_TYPE::INFO, std::string(__func__) + "(): runStackSizek: " + std::to_string(runStackSizeK));
+    logByValue(ESP_LOG_INFO, semWifiRouteLock, TAG, std::string(__func__) + "(): runStackSizeK: " + std::to_string(runStackSizeK));
     xTaskCreate(runMarshaller, "wifi_run", 1024 * runStackSizeK, this, TASK_PRIORITY_MID, &taskHandleWIFIRun);
 }
 
@@ -179,7 +179,7 @@ void Wifi::createQueues()
     return;
 
 wifi_createQueues_err:
-    routeLogByValue(LOG_TYPE::ERROR, std::string(__func__) + "(): error: " + esp_err_to_name(ret));
+    logByValue(ESP_LOG_ERROR, semWifiRouteLock, TAG, std::string(__func__) + "(): error: " + esp_err_to_name(ret));
 }
 
 void Wifi::destroyQueues()
@@ -204,12 +204,12 @@ void Wifi::destroyQueues()
 }
 
 /* Public Member Functions */
-TaskHandle_t Wifi::getRunTaskHandle(void)
+TaskHandle_t &Wifi::getRunTaskHandle(void)
 {
     return taskHandleWIFIRun;
 }
 
-QueueHandle_t Wifi::getCmdRequestQueue()
+QueueHandle_t &Wifi::getCmdRequestQueue()
 {
     return queueCmdRequests;
 }

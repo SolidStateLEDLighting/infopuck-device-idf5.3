@@ -15,11 +15,16 @@
 
 #include "esp_check.h"
 
+#include "logging/logging_.hpp"
+#include "diagnostics/diagnostics_.hpp"
+
+/* Forward Declarations */
 class System;
+class Logging;
 
 extern "C"
 {
-    class NVS
+    class NVS : private Logging, private Diagnostics // The "IS-A" relationship
     {
     public:
         static NVS *getInstance() // Enforce use of System as a singleton object
@@ -64,7 +69,7 @@ extern "C"
         NVS(const NVS &) = delete;            // Disable copy constructor
         void operator=(NVS const &) = delete; // Disable assignment operator
 
-        char TAG[5] = "_nvs";
+        char TAG[6] = "_nvs ";
 
         /* Object References */
         System *sys = nullptr;
@@ -80,10 +85,5 @@ extern "C"
 
         // uint8_t firstIndex = 0; // Error indexes (used for saving Error) but not in use inside this project.
         // uint8_t lastIndex = 0;  //
-
-        /* NVS_Logging */
-        std::string errMsg = "";
-        void routeLogByRef(LOG_TYPE, std::string *);
-        void routeLogByValue(LOG_TYPE, std::string);
     };
 }

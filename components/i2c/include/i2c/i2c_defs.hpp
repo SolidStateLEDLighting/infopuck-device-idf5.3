@@ -16,9 +16,12 @@ static const gpio_num_t SDA_PIN_0 = GPIO_NUM_6;
 static const gpio_num_t SCL_PIN_0 = GPIO_NUM_7;
 
 //
-// System values
+// I2C System Values
 //
 static const uint32_t defaultClockSpeed = 400000; // Clock speed in Hz, default: 400KHz
 static const uint32_t defaultTimeout = 500;       // Timeout in milliseconds, default: 500ms
 
 
+/* showI2C */
+#define _showI2C_SomeItem 0x01 // LSB
+#define _showI2CShdnSteps 0x02
